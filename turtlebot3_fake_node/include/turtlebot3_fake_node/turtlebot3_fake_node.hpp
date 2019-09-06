@@ -28,18 +28,19 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "tf2_msgs/msg/tf_message.hpp"
 #include "turtlebot3_msgs/msg/sensor_state.hpp"
 
-#define WHEEL_RADIUS                    0.033  // meter
+#define WHEEL_RADIUS                    0.033  // [m]
 
 #define LEFT                            0
 #define RIGHT                           1
 
-#define MAX_LINEAR_VELOCITY             0.22   // m/s
-#define MAX_ANGULAR_VELOCITY            2.84   // rad/s
-#define VELOCITY_STEP                   0.01   // m/s
-#define VELOCITY_LINEAR_X               0.01   // m/s
-#define VELOCITY_ANGULAR_Z              0.1    // rad/s
+#define MAX_LINEAR_VELOCITY             0.22   // [m/s]
+#define MAX_ANGULAR_VELOCITY            2.84   // [rad/s]
+#define VELOCITY_STEP                   0.01   // [m/s]
+#define VELOCITY_LINEAR_X               0.01   // [m/s]
+#define VELOCITY_ANGULAR_Z              0.1    // [rad/s]
 #define SCALE_VELOCITY_LINEAR_X         1
 #define SCALE_VELOCITY_ANGULAR_Z        1
 
@@ -56,24 +57,22 @@ class Turtlebot3Fake : public rclcpp::Node
   ~Turtlebot3Fake();
   
  private:
-  // ROS Time
+  // ROS time
   rclcpp::Time last_cmd_vel_time_;
   rclcpp::Time prev_update_time_;
 
-  // ROS Topic Publishers
+  // ROS topic publishers
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_broadcaster_;
 
-  // ROS Topic Subscribers
+  // ROS topic subscribers
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
   rclcpp::TimerBase::SharedPtr update_timer_;
 
   sensor_msgs::msg::JointState joint_states_;
   nav_msgs::msg::Odometry odom_;
-  
-  std::shared_ptr<rclcpp::Node> nh_;
-  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   std::string robot_model_;
   double wheel_speed_cmd_[2];
@@ -91,8 +90,7 @@ class Turtlebot3Fake : public rclcpp::Node
   double last_velocity_[2];
 
   double wheel_seperation_;
-  double turning_radius_;
-  double robot_radius_;
+  double wheel_radius_;
 
   // Function prototypes
   void init_parameters();

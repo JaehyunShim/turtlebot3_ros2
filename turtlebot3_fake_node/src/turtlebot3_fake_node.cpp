@@ -24,27 +24,26 @@ Turtlebot3Fake::Turtlebot3Fake()
 : Node("turtlebot3_fake_node")
 {
   /************************************************************
-  ** Initialise ROS Parameters
+  ** Initialise ROS parameters
   ************************************************************/
   init_parameters();
 
   /************************************************************
-  ** Initialise Variables
+  ** Initialise variables
   ************************************************************/
   init_variables();
 
   /************************************************************
-  ** Initialise ROS Publishers, Subscribers
+  ** Initialise ROS publishers, subscribers
   ************************************************************/
-  // Initialise Publishers
+  // Initialise publishers
   joint_states_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 100);
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 100);
+  tf_broadcaster_ = this->create_publisher<tf2_msgs::msg::TFMessage>("tf", 100);
 
-  // Initialise Subscribers
+  // Initialise subscribers
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
     "cmd_vel", 100, std::bind(&Turtlebot3Fake::command_velocity_callback, this, std::placeholders::_1));
-
-  // tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
 
   /************************************************************
   ** Start Update Thread
@@ -83,32 +82,27 @@ void Turtlebot3Fake::init_parameters()
   this->declare_parameter(
     "base_frame",
     rclcpp::ParameterValue(std::string("base_footprint")));
+  this->declare_parameter(
+    "wheels.separation",
+    rclcpp::ParameterValue(0.0));
+  this->declare_parameter(
+    "wheels.radius",
+    rclcpp::ParameterValue(0.0));
 
-  // Get parameter from yaml
+  // Get parameters from yaml
   this->get_parameter("tb3_model", robot_model_);
   this->get_parameter("wheel_left_joint_name", joint_states_name_[LEFT]);
   this->get_parameter("wheel_right_joint_name", joint_states_name_[RIGHT]);
   this->get_parameter("joint_states_frame", joint_states_.header.frame_id);
   this->get_parameter("odom_frame", odom_.header.frame_id);
   this->get_parameter("base_frame", odom_.child_frame_id);
+  this->get_parameter("wheels.separation", wheel_seperation_);
+  this->get_parameter("wheels.radius", wheel_radius_);
 }
 
 void Turtlebot3Fake::init_variables()
 {
-  if (!robot_model_.compare("burger"))
-  {
-    wheel_seperation_ = 0.160;
-    turning_radius_   = 0.080;
-    robot_radius_     = 0.105;
-  }
-  else if (!robot_model_.compare("waffle") || !robot_model_.compare("waffle_pi"))
-  {
-    wheel_seperation_ = 0.287;
-    turning_radius_   = 0.1435;
-    robot_radius_     = 0.220;
-  }
-
-  // Initialise Variables
+  // Initialise variables
   wheel_speed_cmd_[LEFT]  = 0.0;
   wheel_speed_cmd_[RIGHT] = 0.0;
   goal_linear_velocity_   = 0.0;
@@ -147,7 +141,7 @@ void Turtlebot3Fake::init_variables()
 }
 
 /********************************************************************************
-** Callback Functions for ROS Subscribers
+** Callback functions for ROS subscribers
 ********************************************************************************/
 void Turtlebot3Fake::command_velocity_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel_msg)
 {
@@ -162,7 +156,7 @@ void Turtlebot3Fake::command_velocity_callback(const geometry_msgs::msg::Twist::
 }
 
 /********************************************************************************
-** Functions related to update_callback 
+** Functions related to update_callback()
 ********************************************************************************/
 void Turtlebot3Fake::update_callback()
 {
@@ -191,7 +185,9 @@ void Turtlebot3Fake::update_callback()
   // tf
   geometry_msgs::msg::TransformStamped odom_tf;
   update_tf(odom_tf);
-  tf_broadcaster_->sendTransform(odom_tf);
+  tf2_msgs::msg::TFMessage odom_tf_tfm;
+  odom_tf_tfm.transforms.push_back(odom_tf);
+  tf_broadcaster_->publish(odom_tf_tfm);
 }
 
 bool Turtlebot3Fake::update_odometry(rclcpp::Duration diff_time)
