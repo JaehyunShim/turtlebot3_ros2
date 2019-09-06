@@ -5,7 +5,6 @@ turtlebot3_fake_node:
       separation: 0.287
       radius: 0.033
 
-    tb3_model: ""
     wheel_left_joint_name: "wheel_left_joint"
     wheel_right_joint_name: "wheel_right_joint"
     joint_states_frame: "base_footprint"

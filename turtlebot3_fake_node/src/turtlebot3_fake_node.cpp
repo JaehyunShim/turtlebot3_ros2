@@ -64,40 +64,22 @@ Turtlebot3Fake::~Turtlebot3Fake()
 void Turtlebot3Fake::init_parameters()
 {
   // Declare parameters that may be set on this node
-  this->declare_parameter(
-    "tb3_model",
-    rclcpp::ParameterValue(std::string("")));
-  this->declare_parameter(
-    "wheel_left_joint_name",
-    rclcpp::ParameterValue(std::string("wheel_left_joint")));
-  this->declare_parameter(
-    "wheel_right_joint_name",
-    rclcpp::ParameterValue(std::string("wheel_right_joint")));
-  this->declare_parameter(
-    "joint_states_frame",
-    rclcpp::ParameterValue(std::string("base_footprint")));
-  this->declare_parameter(
-    "odom_frame",
-    rclcpp::ParameterValue(std::string("odom")));
-  this->declare_parameter(
-    "base_frame",
-    rclcpp::ParameterValue(std::string("base_footprint")));
-  this->declare_parameter(
-    "wheels.separation",
-    rclcpp::ParameterValue(0.0));
-  this->declare_parameter(
-    "wheels.radius",
-    rclcpp::ParameterValue(0.0));
+  this->declare_parameter("wheel_left_joint_name");
+  this->declare_parameter("wheel_right_joint_name");
+  this->declare_parameter("joint_states_frame");
+  this->declare_parameter("odom_frame");
+  this->declare_parameter("base_frame");
+  this->declare_parameter("wheels.separation");
+  this->declare_parameter("wheels.radius");
 
   // Get parameters from yaml
-  this->get_parameter("tb3_model", robot_model_);
-  this->get_parameter("wheel_left_joint_name", joint_states_name_[LEFT]);
-  this->get_parameter("wheel_right_joint_name", joint_states_name_[RIGHT]);
-  this->get_parameter("joint_states_frame", joint_states_.header.frame_id);
-  this->get_parameter("odom_frame", odom_.header.frame_id);
-  this->get_parameter("base_frame", odom_.child_frame_id);
-  this->get_parameter("wheels.separation", wheel_seperation_);
-  this->get_parameter("wheels.radius", wheel_radius_);
+  this->get_parameter_or<std::string>("wheel_left_joint_name", joint_states_name_[LEFT], "wheel_left_joint");
+  this->get_parameter_or<std::string>("wheel_right_joint_name", joint_states_name_[RIGHT], "wheel_right_joint");
+  this->get_parameter_or<std::string>("joint_states_frame", joint_states_.header.frame_id, "base_footprint");
+  this->get_parameter_or<std::string>("odom_frame", odom_.header.frame_id, "odom");
+  this->get_parameter_or<std::string>("base_frame", odom_.child_frame_id, "base_footprint");
+  this->get_parameter_or<double>("wheels.separation", wheel_seperation_, 0.0);
+  this->get_parameter_or<double>("wheels.radius", wheel_radius_, 0.0);
 }
 
 void Turtlebot3Fake::init_variables()
@@ -156,7 +138,7 @@ void Turtlebot3Fake::command_velocity_callback(const geometry_msgs::msg::Twist::
 }
 
 /********************************************************************************
-** Functions related to update_callback()
+** Update functions
 ********************************************************************************/
 void Turtlebot3Fake::update_callback()
 {
@@ -200,9 +182,9 @@ bool Turtlebot3Fake::update_odometry(rclcpp::Duration diff_time)
   delta_s = delta_theta = 0.0;
 
   v[LEFT]  = wheel_speed_cmd_[LEFT];
-  w[LEFT]  = v[LEFT] / WHEEL_RADIUS;  // w = v / r
+  w[LEFT]  = v[LEFT] / wheel_radius_;  // w = v / r
   v[RIGHT] = wheel_speed_cmd_[RIGHT];
-  w[RIGHT] = v[RIGHT] / WHEEL_RADIUS;
+  w[RIGHT] = v[RIGHT] / wheel_radius_;
 
   last_velocity_[LEFT]  = w[LEFT];
   last_velocity_[RIGHT] = w[RIGHT];
@@ -223,8 +205,8 @@ bool Turtlebot3Fake::update_odometry(rclcpp::Duration diff_time)
   last_position_[LEFT]  += wheel_l;
   last_position_[RIGHT] += wheel_r;
 
-  delta_s     = WHEEL_RADIUS * (wheel_r + wheel_l) / 2.0;
-  delta_theta = WHEEL_RADIUS * (wheel_r - wheel_l) / wheel_seperation_;
+  delta_s     = wheel_radius_ * (wheel_r + wheel_l) / 2.0;
+  delta_theta = wheel_radius_ * (wheel_r - wheel_l) / wheel_seperation_;
 
   // compute odometric pose
   odom_pose_[0] += delta_s * cos(odom_pose_[2] + (delta_theta / 2.0));

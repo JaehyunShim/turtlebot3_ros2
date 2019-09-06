@@ -31,8 +31,6 @@
 #include "tf2_msgs/msg/tf_message.hpp"
 #include "turtlebot3_msgs/msg/sensor_state.hpp"
 
-#define WHEEL_RADIUS                    0.033  // [m]
-
 #define LEFT                            0
 #define RIGHT                           1
 
@@ -60,7 +58,6 @@ class Turtlebot3Fake : public rclcpp::Node
   sensor_msgs::msg::JointState joint_states_;
   nav_msgs::msg::Odometry odom_;
 
-  std::string robot_model_;
   double wheel_speed_cmd_[2];
   double goal_linear_velocity_;
   double goal_angular_velocity_;
@@ -68,7 +65,6 @@ class Turtlebot3Fake : public rclcpp::Node
 
   float  odom_pose_[3];
   float  odom_vel_[3];
-  double pose_cov_[36];
 
   std::string joint_states_name_[2];
 
