@@ -36,20 +36,6 @@
 #define LEFT                            0
 #define RIGHT                           1
 
-#define MAX_LINEAR_VELOCITY             0.22   // [m/s]
-#define MAX_ANGULAR_VELOCITY            2.84   // [rad/s]
-#define VELOCITY_STEP                   0.01   // [m/s]
-#define VELOCITY_LINEAR_X               0.01   // [m/s]
-#define VELOCITY_ANGULAR_Z              0.1    // [rad/s]
-#define SCALE_VELOCITY_LINEAR_X         1
-#define SCALE_VELOCITY_ANGULAR_Z        1
-
-#define DEG2RAD(x)                      (x * 0.01745329252)  // *PI/180
-#define RAD2DEG(x)                      (x * 57.2957795131)  // *180/PI
-
-#define TORQUE_ENABLE                   1       // Value for enabling the torque of motor
-#define TORQUE_DISABLE                  0       // Value for disabling the torque of motor
-
 class Turtlebot3Fake : public rclcpp::Node
 {
  public:
