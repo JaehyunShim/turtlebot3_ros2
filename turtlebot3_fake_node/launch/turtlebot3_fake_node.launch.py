@@ -22,8 +22,8 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import LogInfo
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -50,7 +50,6 @@ def generate_launch_description():
         'urdf',
         urdf_file_name)
 
-
     return LaunchDescription([
         LogInfo(msg=['Execute Turtlebot3 Fake Node!!']),
 
@@ -60,8 +59,7 @@ def generate_launch_description():
             description='Specifying parameter direction'),
 
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([rviz_dir, '/rviz2.launch.py']),
-        ),
+            PythonLaunchDescriptionSource([rviz_dir, '/rviz2.launch.py'])),
 
         Node(
             package='turtlebot3_fake_node',

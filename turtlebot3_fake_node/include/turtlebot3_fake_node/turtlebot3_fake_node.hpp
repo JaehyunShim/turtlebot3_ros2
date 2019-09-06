@@ -22,12 +22,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <chrono>
 #include <tf2/LinearMath/Quaternion.h>
-#include <tf2_ros/transform_broadcaster.h>
 
-#include "sensor_msgs/msg/joint_state.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include "turtlebot3_msgs/msg/sensor_state.hpp"
 
@@ -46,30 +45,26 @@ class Turtlebot3Fake : public rclcpp::Node
   rclcpp::Time prev_update_time_;
 
   // ROS topic publishers
-  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_broadcaster_;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub_;
+  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
 
   // ROS topic subscribers
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
   rclcpp::TimerBase::SharedPtr update_timer_;
 
-  sensor_msgs::msg::JointState joint_states_;
   nav_msgs::msg::Odometry odom_;
+  sensor_msgs::msg::JointState joint_states_;
 
   double wheel_speed_cmd_[2];
   double goal_linear_velocity_;
   double goal_angular_velocity_;
   double cmd_vel_timeout_;
-
-  float  odom_pose_[3];
-  float  odom_vel_[3];
-
-  std::string joint_states_name_[2];
-
   double last_position_[2];
   double last_velocity_[2];
+  float  odom_pose_[3];
+  float  odom_vel_[3];
 
   double wheel_seperation_;
   double wheel_radius_;
@@ -79,8 +74,8 @@ class Turtlebot3Fake : public rclcpp::Node
   void init_variables();
   void command_velocity_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel_msg);
   void update_callback();
-  bool update_odometry(rclcpp::Duration diff_time);
-  void update_joint();
+  bool update_odometry(const rclcpp::Duration & diff_time);
+  void update_joint_state();
   void update_tf(geometry_msgs::msg::TransformStamped & odom_tf);
 };
 
