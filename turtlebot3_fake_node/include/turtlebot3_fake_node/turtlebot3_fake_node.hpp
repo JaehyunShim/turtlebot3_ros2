@@ -16,25 +16,21 @@
 
 /* Authors: Yoonseok Pyo */
 
-#ifndef TURTLEBOT3_FAKE_HPP_
-#define TURTLEBOT3_FAKE_HPP_
-
-#include <math.h>
+#ifndef TURTLEBOT3_FAKE_NODE_HPP_
+#define TURTLEBOT3_FAKE_NODE_HPP_
 
 #include <rclcpp/rclcpp.hpp>
 #include <chrono>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 
-#include "std_msgs/msg/int32.hpp"
-#include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
-#include "geometry_msgs/msg/vector3.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "turtlebot3_msgs/msg/sensor_state.hpp"
 
-#define WHEEL_RADIUS                    0.033     // meter
+#define WHEEL_RADIUS                    0.033  // meter
 
 #define LEFT                            0
 #define RIGHT                           1
@@ -59,15 +55,7 @@ class Turtlebot3Fake : public rclcpp::Node
   Turtlebot3Fake();
   ~Turtlebot3Fake();
   
-  bool update_callback();
-
  private:
-  /************************************************************
-  ** Init Functions
-  ************************************************************/
-  void init_parameters();
-  void init_variables();
-
   // ROS Time
   rclcpp::Time last_cmd_vel_time_;
   rclcpp::Time prev_update_time_;
@@ -84,6 +72,7 @@ class Turtlebot3Fake : public rclcpp::Node
   sensor_msgs::msg::JointState joint_states_;
   nav_msgs::msg::Odometry odom_;
   
+  std::shared_ptr<rclcpp::Node> nh_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   std::string robot_model_;
@@ -106,10 +95,13 @@ class Turtlebot3Fake : public rclcpp::Node
   double robot_radius_;
 
   // Function prototypes
+  void init_parameters();
+  void init_variables();
   void command_velocity_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel_msg);
+  void update_callback();
   bool update_odometry(rclcpp::Duration diff_time);
-  void update_joint(void);
+  void update_joint();
   void update_tf(geometry_msgs::msg::TransformStamped & odom_tf);
 };
 
-#endif // TURTLEBOT3_FAKE_HPP_
+#endif // TURTLEBOT3_FAKE_NODE_HPP_

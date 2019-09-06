@@ -2,7 +2,7 @@
 # Set minimum required version of cmake, project name and compile options
 ################################################################################
 cmake_minimum_required(VERSION 3.5)
-project(turtlebot3_fake)
+project(turtlebot3_fake_node)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -20,7 +20,6 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(turtlebot3_msgs REQUIRED)
@@ -41,15 +40,14 @@ set(dependencies
   "nav_msgs" 
   "rclcpp" 
   "sensor_msgs"
-  "std_msgs" 
   "tf2" 
   "tf2_ros" 
   "turtlebot3_msgs" 
 )
 
-set(EXEC_NAME "turtlebot3_fake")
+set(EXEC_NAME "turtlebot3_fake_node")
 
-add_executable(${EXEC_NAME} src/turtlebot3_fake.cpp)
+add_executable(${EXEC_NAME} src/turtlebot3_fake_node.cpp)
 ament_target_dependencies(${EXEC_NAME} ${dependencies})
 
 ################################################################################
@@ -59,7 +57,7 @@ install(TARGETS ${EXEC_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch rviz
+install(DIRECTORY launch param rviz 
   DESTINATION share/${PROJECT_NAME}
 )
 
@@ -85,7 +83,6 @@ ament_export_dependencies(geometry_msgs)
 ament_export_dependencies(nav_msgs)
 ament_export_dependencies(rclcpp)
 ament_export_dependencies(sensor_msgs)
-ament_export_dependencies(std_msgs)
 ament_export_dependencies(tf2)
 ament_export_dependencies(tf2_ros)
 ament_export_dependencies(turtlebot3_msgs)

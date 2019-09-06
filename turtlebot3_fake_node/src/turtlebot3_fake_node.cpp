@@ -16,7 +16,7 @@
 
 /* Authors: Yoonseok Pyo */
 
-#include "turtlebot3_fake/turtlebot3_fake.hpp"
+#include "turtlebot3_fake_node/turtlebot3_fake_node.hpp"
 
 using namespace std::chrono_literals;
 
@@ -44,6 +44,8 @@ Turtlebot3Fake::Turtlebot3Fake()
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
     "cmd_vel", 100, std::bind(&Turtlebot3Fake::command_velocity_callback, this, std::placeholders::_1));
 
+  // tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
+
   /************************************************************
   ** Start Update Thread
   ************************************************************/
@@ -65,28 +67,22 @@ void Turtlebot3Fake::init_parameters()
   // Declare parameters that may be set on this node
   this->declare_parameter(
     "tb3_model",
-    rclcpp::ParameterValue(std::string("")),
-    rcl_interfaces::msg::ParameterDescriptor());
+    rclcpp::ParameterValue(std::string("")));
   this->declare_parameter(
     "wheel_left_joint_name",
-    rclcpp::ParameterValue(std::string("wheel_left_joint")),
-    rcl_interfaces::msg::ParameterDescriptor());
+    rclcpp::ParameterValue(std::string("wheel_left_joint")));
   this->declare_parameter(
     "wheel_right_joint_name",
-    rclcpp::ParameterValue(std::string("wheel_right_joint")),
-    rcl_interfaces::msg::ParameterDescriptor());
+    rclcpp::ParameterValue(std::string("wheel_right_joint")));
   this->declare_parameter(
     "joint_states_frame",
-    rclcpp::ParameterValue(std::string("base_footprint")),
-    rcl_interfaces::msg::ParameterDescriptor());
+    rclcpp::ParameterValue(std::string("base_footprint")));
   this->declare_parameter(
     "odom_frame",
-    rclcpp::ParameterValue(std::string("odom")),
-    rcl_interfaces::msg::ParameterDescriptor());
+    rclcpp::ParameterValue(std::string("odom")));
   this->declare_parameter(
     "base_frame",
-    rclcpp::ParameterValue(std::string("base_footprint")),
-    rcl_interfaces::msg::ParameterDescriptor());
+    rclcpp::ParameterValue(std::string("base_footprint")));
 
   // Get parameter from yaml
   this->get_parameter("tb3_model", robot_model_);
@@ -168,7 +164,7 @@ void Turtlebot3Fake::command_velocity_callback(const geometry_msgs::msg::Twist::
 /********************************************************************************
 ** Functions related to update_callback 
 ********************************************************************************/
-bool Turtlebot3Fake::update_callback()
+void Turtlebot3Fake::update_callback()
 {
   rclcpp::Clock clock(RCL_SYSTEM_TIME);
   rclcpp::Time time_now = clock.now();
@@ -176,7 +172,7 @@ bool Turtlebot3Fake::update_callback()
   prev_update_time_ = time_now;
 
   // zero-ing after timeout
-  if((time_now - last_cmd_vel_time_).seconds() > cmd_vel_timeout_)
+  if ((time_now - last_cmd_vel_time_).seconds() > cmd_vel_timeout_)
   {
     wheel_speed_cmd_[LEFT]  = 0.0;
     wheel_speed_cmd_[RIGHT] = 0.0;
@@ -196,8 +192,6 @@ bool Turtlebot3Fake::update_callback()
   geometry_msgs::msg::TransformStamped odom_tf;
   update_tf(odom_tf);
   tf_broadcaster_->sendTransform(odom_tf);
-
-  return true;
 }
 
 bool Turtlebot3Fake::update_odometry(rclcpp::Duration diff_time)
@@ -265,7 +259,7 @@ bool Turtlebot3Fake::update_odometry(rclcpp::Duration diff_time)
   return true;
 }
 
-void Turtlebot3Fake::update_joint(void)
+void Turtlebot3Fake::update_joint()
 {
   joint_states_.position[LEFT]  = last_position_[LEFT];
   joint_states_.position[RIGHT] = last_position_[RIGHT];
@@ -273,7 +267,7 @@ void Turtlebot3Fake::update_joint(void)
   joint_states_.velocity[RIGHT] = last_velocity_[RIGHT];
 }
 
-void Turtlebot3Fake::update_tf(geometry_msgs::msg::TransformStamped& odom_tf)
+void Turtlebot3Fake::update_tf(geometry_msgs::msg::TransformStamped & odom_tf)
 {
   odom_tf.header = odom_.header;
   odom_tf.child_frame_id = odom_.child_frame_id;
