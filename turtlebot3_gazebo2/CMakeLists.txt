@@ -23,7 +23,7 @@ find_package(turtlebot3 REQUIRED)
 ################################################################################
 # Install
 ################################################################################
-install(DIRECTORY models rviz worlds launch
+install(DIRECTORY models worlds launch
   DESTINATION share/${PROJECT_NAME}/
 )
 
