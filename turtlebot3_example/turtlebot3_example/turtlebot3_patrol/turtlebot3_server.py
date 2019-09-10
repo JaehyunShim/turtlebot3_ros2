@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-#################################################################################
-# Copyright 2018 ROBOTIS CO., LTD.
+#!/usr/bin/env python3
+#
+# Copyright 2019 ROBOTIS CO., LTD.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#################################################################################
+#
+# Authors: Gilbert 
 
-# Authors: Gilbert #
+import os
+import select
+import sys
+import termios
+import tty
 
-import rospy
+import rclpy
+from rclpy.qos import QoSProfile
+
+
 import actionlib
 from geometry_msgs.msg import Twist, Point, Quaternion
 from nav_msgs.msg import Odometry
@@ -158,8 +166,10 @@ class Turtlebot3Action(object):
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._as.set_succeeded(self._result)
 
-if __name__ == '__main__':
+def main():
     rospy.init_node('turtlebot3')
     server = Turtlebot3Action(rospy.get_name())
     rospy.spin()
     
+if __name__ == '__main__':
+    main()

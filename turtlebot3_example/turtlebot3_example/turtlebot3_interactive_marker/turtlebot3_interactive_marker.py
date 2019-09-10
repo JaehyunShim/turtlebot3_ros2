@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-#################################################################################
-# Copyright 2018 ROBOTIS CO., LTD.
+#!/usr/bin/env python3
+#
+# Copyright 2019 ROBOTIS CO., LTD.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#################################################################################
+#
+# Authors: Gilbert 
 
-# Authors: Gilbert #
+import os
+import select
+import sys
+import termios
+import tty
 
-import rospy
+import rclpy
+from rclpy.qos import QoSProfile
+
 from geometry_msgs.msg import Twist, Pose
 from interactive_markers.interactive_marker_server import *
 from visualization_msgs.msg import *
@@ -37,14 +44,13 @@ def processFeedback(feedback):
     server.setPose("turtlebot3_marker", Pose())
     server.applyChanges()
 
-if __name__ == "__main__":
+def main():
     rospy.init_node("turtlebot3_interactive_marker_server")
     server = InteractiveMarkerServer("turtlebot3_marker_server")
     vel_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
     int_marker = InteractiveMarker()
     int_marker.header.frame_id = "base_link"
     int_marker.name = "turtlebot3_marker"
-
 
     control = InteractiveMarkerControl()
     control.orientation_mode = InteractiveMarkerControl.FIXED
@@ -71,3 +77,6 @@ if __name__ == "__main__":
     server.applyChanges()
 
     rospy.spin()
+
+if __name__ == '__main__':
+    main()

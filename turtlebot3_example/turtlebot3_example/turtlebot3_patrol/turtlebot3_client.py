@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-#################################################################################
-# Copyright 2018 ROBOTIS CO., LTD.
+#!/usr/bin/env python3
+#
+# Copyright 2019 ROBOTIS CO., LTD.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#################################################################################
+#
+# Authors: Ryan Shim
 
-# Authors: Gilbert #
+import os
+import select
+import sys
+import termios
+import tty
+
+import rclpy
+from rclpy.qos import QoSProfile
+
 
 from __future__ import print_function
-import rospy
 import actionlib
 import turtlebot3_example.msg
 import sys
 
 msg = """
-patrol your TurtleBot3!
+Patrol your TurtleBot3!
 -----------------------
 mode : s - Patrol to Square
        t - Patrol to Triangle
@@ -37,6 +45,11 @@ count - patrol count
 
 If you want to close, insert 'x'
 """
+
+e = """
+Communications Failed
+""" 
+
 
 class Client():
     def __init__(self):
@@ -78,7 +91,7 @@ class Client():
     def shutdown(self):
         rospy.sleep(1)
 
-if __name__ == '__main__':
+def main():
     rospy.init_node('turtlebot3_client')
     try:
         while not rospy.is_shutdown():
@@ -86,3 +99,6 @@ if __name__ == '__main__':
             result = Client()
     except:
         print("program close.", file=sys.stderr)
+
+if __name__ == '__main__':
+    main()
