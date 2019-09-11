@@ -34,7 +34,7 @@ from turtlebot3_msgs.msg import SensorState
 import turtlebot3_example.msg 
 import numpy as np
 
-class Turtlebot3Action(object):
+class Turtlebot3PatrolServer(object):
     _feedback = turtlebot3_example.msg.Turtlebot3ActionFeedback()
     _result = turtlebot3_example.msg.Turtlebot3ActionResult()
 

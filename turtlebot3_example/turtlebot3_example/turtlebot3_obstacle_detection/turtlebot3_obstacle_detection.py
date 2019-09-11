@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert 
+# Authors: Gilbert, Ryan Shim
 
 import os
 import select
@@ -34,7 +34,7 @@ STOP_DISTANCE = 0.2
 LIDAR_ERROR = 0.05
 SAFE_STOP_DISTANCE = STOP_DISTANCE + LIDAR_ERROR
 
-class Obstacle():
+class Turtlebot3ObstacleDetection():
     def __init__(self):
         self._cmd_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.obstacle()
@@ -91,13 +91,3 @@ class Obstacle():
                 self._cmd_pub.publish(twist)
                 turtlebot_moving = True
                 rospy.loginfo('Distance of the obstacle : %f', min_distance)
-
-def main():
-    rospy.init_node('turtlebot3_obstacle')
-    try:
-        obstacle = Obstacle()
-    except rospy.ROSInterruptException:
-        pass
-
-if __name__ == '__main__':
-    main()

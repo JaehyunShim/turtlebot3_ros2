@@ -51,7 +51,7 @@ Communications Failed
 """ 
 
 
-class Client():
+class Turtlebot3PatrolClient():
     def __init__(self):
         rospy.loginfo("wait for server")
         self.client()
@@ -90,15 +90,3 @@ class Client():
 
     def shutdown(self):
         rospy.sleep(1)
-
-def main():
-    rospy.init_node('turtlebot3_client')
-    try:
-        while not rospy.is_shutdown():
-            print (msg)
-            result = Client()
-    except:
-        print("program close.", file=sys.stderr)
-
-if __name__ == '__main__':
-    main()

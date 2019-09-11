@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert 
+# Authors: Gilbert, Ryan Shim 
 
 import os
 import select
@@ -32,51 +32,50 @@ import tf
 from tf.transformations import euler_from_quaternion
 import copy
 
-def processFeedback(feedback):
-    _,_,yaw = euler_from_quaternion((feedback.pose.orientation.x, feedback.pose.orientation.y, feedback.pose.orientation.z, feedback.pose.orientation.w))
 
-    twist = Twist()
-    twist.angular.z = 2.2 * yaw
-    twist.linear.x = 1.0 * feedback.pose.position.x
+class Turtlebot3InteractiveMarker():
+    def __init__(self):
+        #
+        server = InteractiveMarkerServer("turtlebot3_interactive_marker_server")
+        qos = QoSProfile(depth=10)
+        vel_pub = rospy.Publisher("cmd_vel", Twist, queue_size = qos)
+        interactive_marker = InteractiveMarker()
+        interactive_marker.header.frame_id = "base_link"
+        interactive_marker.name = "turtlebot3_marker"
 
-    vel_pub.publish(twist)
+        #
+        interactive_marker_control = InteractiveMarkerControl()
+        interactive_marker_control.orientation_mode = InteractiveMarkerControl.FIXED
+        interactive_marker_control.orientation.w = 1
+        interactive_marker_control.orientation.x = 1
+        interactive_marker_control.orientation.y = 0
+        interactive_marker_control.orientation.z = 0
+        interactive_marker_control.name = "move_x"
+        interactive_marker_control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
+        interactive_marker_control.always_visible = True
+        interactive_marker.controls.append(copy.deepcopy(interactive_marker_control))
 
-    server.setPose("turtlebot3_marker", Pose())
-    server.applyChanges()
+        #
+        interactive_marker_control.orientation.w = 1
+        interactive_marker_control.orientation.x = 0
+        interactive_marker_control.orientation.y = 1
+        interactive_marker_control.orientation.z = 0
+        interactive_marker_control.name = "rotate_z"
+        interactive_marker_control.interaction_mode = InteractiveMarkerControl.MOVE_ROTATE
+        interactive_marker.controls.append(copy.deepcopy(interactive_marker_control))
 
-def main():
-    rospy.init_node("turtlebot3_interactive_marker_server")
-    server = InteractiveMarkerServer("turtlebot3_marker_server")
-    vel_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
-    int_marker = InteractiveMarker()
-    int_marker.header.frame_id = "base_link"
-    int_marker.name = "turtlebot3_marker"
+        #
+        server.insert(interactive_marker, processFeedback)
+        server.applyChanges()
 
-    control = InteractiveMarkerControl()
-    control.orientation_mode = InteractiveMarkerControl.FIXED
-    control.orientation.w = 1
-    control.orientation.x = 1
-    control.orientation.y = 0
-    control.orientation.z = 0
-    control.name = "move_x"
-    control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-    control.always_visible = True
-    int_marker.controls.append(copy.deepcopy(control))
+    def processFeedback(feedback):
+        yaw = euler_from_quaternion((feedback.pose.orientation.x, feedback.pose.orientation.y, feedback.pose.orientation.z, feedback.pose.orientation.w))
 
-    control.orientation.w = 1
-    control.orientation.x = 0
-    control.orientation.y = 1
-    control.orientation.z = 0
-    control.name = "rotate_z"
+        twist = Twist()
+        twist.angular.z = 2.2 * yaw
+        twist.linear.x = 1.0 * feedback.pose.position.x
 
-    control.interaction_mode = InteractiveMarkerControl.MOVE_ROTATE
-    int_marker.controls.append(copy.deepcopy(control))
+        vel_pub.publish(twist)
 
-    server.insert(int_marker, processFeedback)
-
-    server.applyChanges()
-
-    rospy.spin()
-
-if __name__ == '__main__':
-    main()
+        server.setPose("turtlebot3_interactive_marker", Pose())
+        server.applyChanges()

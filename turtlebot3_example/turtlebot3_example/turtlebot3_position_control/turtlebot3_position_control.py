@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert 
+# Authors: Ryan Shim 
 
 import os
 import select
@@ -30,10 +30,10 @@ from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import Twist
 import tf
-from math import radians, copysign, sqrt, pow, pi, atan2
+import np
+from math import radians, copysign, sqrt, pi, atan2
 from tf.transformations import euler_from_quaternion
 from tf2_ros.src.tf2_ros.transform_listener import TransformListener
-import numpy as np
 
 msg = """
 control your Turtlebot3!
@@ -46,16 +46,23 @@ If you want to close, insert 's'
 -----------------------
 """
 
+LINEAR_VELOCITY = 0.5  # unit: m/s
+LINEAR_VELOCITY = 0.5  # unit: m/s
+ANGULAR_VELOCITY = 0.5 # unit: m/s
+EPSILON = 0.05
 
 class Turtlebot3PositionControl(Node):
 
     def __init__(self):
-        rospy.init_node('turtlebot3_pointop_key', anonymous=False)
+
+        settings = termios.tcgetattr(sys.stdin)
+
+        qos = QoSProfile(depth=10)
+        pub = node.create_publisher(Twist, 'cmd_vel', qos)
+
+        rospy.init_node('turtlebot3_position_control', anonymous=False)
         rospy.on_shutdown(self.shutdown)
         self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
-        point = Point()
-        twist = Twist()
-        r = rospy.Rate(10)
         self.tf_listener = tf.TransformListener()
         self.odom_frame = 'odom'
 
@@ -70,85 +77,67 @@ class Turtlebot3PositionControl(Node):
                 rospy.loginfo("Cannot find transform between odom and base_link or base_footprint")
                 rospy.signal_shutdown("tf Exception")
 
-        # Get odometry
-        (point, rotation) = self.get_odometry()
-
-        # Initialise variables
-        linear_velocity = 1
-        angular_velocity = 1
-        last_theta = 0
-
         # Update goal pose
-        (goal_x, goal_y, goal_theta) = self.get_key()
+        (goal_x, goal_y, goal_theta) = self.get_key()   
 
-        start_x = point.x
-        start_y = point.y
-        goal_theta = np.deg2rad(goal_theta)
-        goal_distance = math.sqrt(pow(goal_x-start_x, 2) + pow(goal_y-start_y, 2))
+        self.timer = self.create_timer(1.0, self.update_callback) # timer rate unit: s
 
-        while goal_distance > 0.05:
-            path_angle = atan2(goal_y - start_y, goal_x - start_x)
+    def update_callback(self):
+        # Get odometry
+        (curr_x, curr_y, curr_theta) = self.get_odometry() # Pose in the world cordinate 
+        # (curr_x, curr_y, curr_theta) = [0 0 0]             # Pose in the local cordinate 
+        twist = Twist()
 
-            if path_angle < -pi/4 or path_angle > pi/4:
-                if goal_y < 0 and start_y < goal_y:
-                    path_angle = -2*pi + path_angle
-                elif goal_y >= 0 and start_y > goal_y:
-                    path_angle = 2*pi + path_angle
+        # Rotate towards the goal position (towards the goal path)
+        path_theta = math.atan2(goal_y-curr_y, goal_x-curr_x)
+        diff_theta = path_theta - curr_theta
+        if math.fabs((diff_theta) > EPSILON:
+            if diff_theta >= pi:
+                twist.angular.z = -ANGULAR_VELOCITY
+            elif pi > diff_theta and diff_theta >= 0:
+                twist.angular.z = ANGULAR_VELOCITY
+            elif 0 > diff_theta and diff_theta >= -pi:
+                twist.angular.z = -ANGULAR_VELOCITY
+            elif diff_theta > -pi:
+                twist.angular.z = ANGULAR_VELOCITY
 
-            if last_theta > pi-0.1 and rotation <= 0:
-                rotation = 2*pi + rotation
-            elif last_theta < -pi+0.1 and rotation > 0:
-                rotation = -2*pi + rotation
-
-            twist.angular.z = angular_velocity*path_angle - rotation
-
-            goal_distance = sqrt(pow((goal_x-start_x), 2) + pow((goal_y-start_y), 2))
-            twist.linear.x = min(linear_velocity * goal_distance, 0.)
-
-            if twist.angular.z > 0:
-                twist.angular.z = min(twist.angular.z, 1.5)
-            else:
-                twist.angular.z = max(twist.angular.z, -1.5)
-
-            last_rotation = rotation
             self.cmd_vel.publish(twist)
-            r.sleep()
 
-        (point, rotation) = self.get_odometry()
+        # Move towards the goal position
+        path_distance = math.sqrt((goal_x-curr_x)**2  + (goal_y-curr_y)**2)
+        if path_distance > EPSILON:
+            twist.linear.x = LINEAR_VELOCITY
 
-        while abs(rotation - goal_theta) > 0.05:
-            (point, rotation) = self.get_odometry()
-            if goal_theta >= 0:
-                if rotation <= goal_theta and rotation >= goal_theta - pi:
-                    twist.linear.x = 0.0
-                    twist.angular.z = 0.5
-                else:
-                    twist.linear.x = 0.0
-                    twist.angular.z = -0.5
-            else:
-                if rotation <= goal_theta + pi and rotation > goal_theta:
-                    twist.linear.x = 0.0
-                    twist.angular.z = -0.5
-                else:
-                    twist.linear.x = 0.0
-                    twist.angular.z = 0.5
             self.cmd_vel.publish(twist)
-            r.sleep()
 
+        # Rotate to the goal orientation
+        diff_theta = goal_theta - curr_theta
+        if math.fabs((diff_theta) > EPSILON:
+            if diff_theta >= pi:
+                twist.angular.z = -ANGULAR_VELOCITY
+            elif pi > diff_theta and diff_theta >= 0:
+                twist.angular.z = ANGULAR_VELOCITY
+            elif 0 > diff_theta and diff_theta >= -pi:
+                twist.angular.z = -ANGULAR_VELOCITY
+            elif diff_theta > -pi:
+                twist.angular.z = ANGULAR_VELOCITY
 
-        rospy.loginfo("Stopping the robot...")
-        self.cmd_vel.publish(Twist())
+            self.cmd_vel.publish(twist)
 
     def get_key(self):
-        x, y, z = raw_input("| x | y | z |\n").split()
- 
-        x, y, z = [float(x), float(y), float(z)]
-
-        if goal_theta > 180 or goal_theta < -180:
+        x = raw_input("x: ")
+        y = raw_input("y: ")
+        theta = raw_input("theta: ")
+        while theta > 180 or theta < -180:
             print("you input wrong theta range.")
-            rclpy.shutdown()
+            theta = raw_input("theta: ")
 
-        return x, y, z
+        # Convert ?? to double
+        x = double(x) 
+        y = double(y) 
+        theta = np.deg2rad(double(theta)) # Convert [deg] to [rad]
+
+        return x, y, theta
 
     def get_odometry(self):
         try:
@@ -159,28 +148,5 @@ class Turtlebot3PositionControl(Node):
             rospy.loginfo("TF Exception")
             return
 
-        return (Point(*trans), rotation[2])
-
-def main(args=None):
-    settings = termios.tcgetattr(sys.stdin)
-
-    rclpy.init(args=args)
-
-    qos = QoSProfile(depth=10)
-    node = rclpy.create_node('turtlebot3_pointop_key')
-    pub = node.create_publisher(Twist, 'cmd_vel', qos)
-
-    twist = Twist()
-    point = Point()
-
-    rclpy.spin(node)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    node.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+        point = Point(*trans)
+        return (point.x, point.y, rotation[2])

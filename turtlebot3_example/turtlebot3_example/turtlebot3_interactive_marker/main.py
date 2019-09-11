@@ -16,16 +16,15 @@
 #
 # Authors: Ryan Shim 
 
-import sys
-
 import rclpy
 
-from turtlebot3_example.turtlebot3_position_control.turtlebot3_position_control import Turtlebot3PositionControl
+from turtlebot3_example.turtlebot3_interactive_marker.turtlebot3_interactive_marker import Turtlebot3InteractiveMarker
+
 
 def main(args=None):
     rclpy.init(args=args)
 
-    node = Turtlebot3PositionControl()
+    node = Turtlebot3InteractiveMarker()
 
     rclpy.spin(node)
 

@@ -16,16 +16,14 @@
 #
 # Authors: Ryan Shim 
 
-import sys
-
 import rclpy
 
-from turtlebot3_example.turtlebot3_position_control.turtlebot3_position_control import Turtlebot3PositionControl
+from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_patrol_server import Turtlebot3PatrolServer
 
-def main(args=None):
+def main():
     rclpy.init(args=args)
 
-    node = Turtlebot3PositionControl()
+    node = Turtlebot3PatrolServer()
 
     rclpy.spin(node)
 
