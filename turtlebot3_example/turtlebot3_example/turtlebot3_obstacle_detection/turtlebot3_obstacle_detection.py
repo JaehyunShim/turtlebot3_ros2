@@ -29,7 +29,7 @@ import math
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 
-LINEAR_VEL = 0.22
+LINEAR_VELOCITY = 0.22
 STOP_DISTANCE = 0.2
 LIDAR_ERROR = 0.05
 SAFE_STOP_DISTANCE = STOP_DISTANCE + LIDAR_ERROR
@@ -86,7 +86,7 @@ class Turtlebot3ObstacleDetection():
                     turtlebot_moving = False
                     rospy.loginfo('Stop!')
             else:
-                twist.linear.x = LINEAR_VEL
+                twist.linear.x = LINEAR_VELOCITY
                 twist.angular.z = 0.0
                 self._cmd_pub.publish(twist)
                 turtlebot_moving = True

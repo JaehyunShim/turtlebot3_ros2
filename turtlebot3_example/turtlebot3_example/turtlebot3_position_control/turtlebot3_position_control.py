@@ -47,7 +47,6 @@ If you want to close, insert 's'
 """
 
 LINEAR_VELOCITY = 0.5  # unit: m/s
-LINEAR_VELOCITY = 0.5  # unit: m/s
 ANGULAR_VELOCITY = 0.5 # unit: m/s
 EPSILON = 0.05
 
@@ -80,7 +79,7 @@ class Turtlebot3PositionControl(Node):
         # Update goal pose
         (goal_x, goal_y, goal_theta) = self.get_key()   
 
-        self.timer = self.create_timer(1.0, self.update_callback) # timer rate unit: s
+        self.update_timer = self.create_timer(1.0, self.update_callback) # timer rate unit: s
 
     def update_callback(self):
         # Get odometry
