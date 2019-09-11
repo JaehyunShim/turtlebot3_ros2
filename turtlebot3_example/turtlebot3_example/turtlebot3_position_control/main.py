@@ -24,13 +24,10 @@ from turtlebot3_example.turtlebot3_position_control.turtlebot3_position_control 
 
 def main(args=None):
     rclpy.init(args=args)
-
     node = Turtlebot3PositionControl()
-
     rclpy.spin(node)
 
     node.destroy_node()
-
     rclpy.shutdown()
 
 

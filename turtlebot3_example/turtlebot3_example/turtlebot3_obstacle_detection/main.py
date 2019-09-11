@@ -23,13 +23,10 @@ from turtlebot3_example.turtlebot3_obstacle_detection.turtlebot3_obstacle_detect
 
 def main(args=None):
     rclpy.init(args=args)
-
     node = Turtlebot3ObstacleDetection()
-
     rclpy.spin(node)
 
     node.destroy_node()
-
     rclpy.shutdown()
 
 

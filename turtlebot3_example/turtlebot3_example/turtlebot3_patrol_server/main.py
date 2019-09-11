@@ -22,13 +22,10 @@ from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_patrol_server import
 
 def main():
     rclpy.init(args=args)
-
     node = Turtlebot3PatrolServer()
-
     rclpy.spin(node)
 
     node.destroy_node()
-
     rclpy.shutdown()
 
 

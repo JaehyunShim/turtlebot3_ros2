@@ -31,8 +31,8 @@ TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='turtlebot3_example',
-            node_executable='turtlebot3_pointop_key',
-            node_name='turtlebot3_pointop_key',
+            package='turtlebot3_position_control',
+            node_executable='turtlebot3_position_control',
+            node_name='turtlebot3_position_control',
             output='screen'),
     ])

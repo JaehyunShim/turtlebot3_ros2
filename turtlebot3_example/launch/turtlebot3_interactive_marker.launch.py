@@ -29,10 +29,25 @@ TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
 
 
 def generate_launch_description():
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+
+    rviz_config_dir = os.path.join(
+        get_package_share_directory('turtlebot3_example'),
+        'launch',
+        'turtlebot3_interactive_marker.rviz')
+
     return LaunchDescription([
         Node(
             package='turtlebot3_example',
-            node_executable='turtlebot3_client',
-            node_name='turtlebot3_client',
+            node_executable='turtlebot3_marker_server',
+            node_name='turtlebot3_marker_server',
+            output='screen'),
+
+        Node(
+            package='rviz2',
+            node_executable='rviz2',
+            node_name='rviz2',
+            arguments=['-d', rviz_config_dir],
+            parameters=[{'use_sim_time': use_sim_time}],
             output='screen'),
     ])

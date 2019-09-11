@@ -23,13 +23,10 @@ from turtlebot3_example.turtlebot3_interactive_marker.turtlebot3_interactive_mar
 
 def main(args=None):
     rclpy.init(args=args)
-
     node = Turtlebot3InteractiveMarker()
-
     rclpy.spin(node)
 
     node.destroy_node()
-
     rclpy.shutdown()
 
 
