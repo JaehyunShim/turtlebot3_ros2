@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert, Ryan Shim
+# Authors: Ryan Shim
 
 import os
 import select
@@ -29,23 +29,50 @@ import math
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 
-LINEAR_VELOCITY = 0.22
-STOP_DISTANCE = 0.2
-LIDAR_ERROR = 0.05
-SAFE_STOP_DISTANCE = STOP_DISTANCE + LIDAR_ERROR
+STOP_DISTANCE = 0.2  # unit: m
+LIDAR_ERROR = 0.05  # unit: m
+SAFETY_DISTANCE = STOP_DISTANCE + LIDAR_ERROR  # unit: m
 
 class Turtlebot3ObstacleDetection():
     def __init__(self):
-        self._cmd_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-        self.obstacle()
-        
+        qos = QoSProfile(depth=10)
+
+        self.raw_cmd_sub = self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, qos)
+        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', qos)
+        self.detect_obstacle()
+
+        self.linear_velocity = 0.0
+        self.angular_velocity = 0.0
+
+    def cmd_vel_callback(self, msg):
+        self.linear_velocity = msg.linear.x
+        self.angular_velocity = msg.angular.z
+
+    def detect_obstacle(self):
+        twist = Twist()
+
+        while not rospy.is_shutdown():
+            obstacle_distances = self.get_scan()
+            min_obstacle_distance = min(obstacle_distances)
+
+            if min_obstacle_distance > SAFETY_DISTANCE:
+                twist.linear.x = self.linear_velocity
+                twist.angular.z = self.angular_velocity
+                self.cmd_pub.publish(twist)
+                print('Distance from the closest obstacle: %f', min_obstacle_distance)
+            else:
+                twist.linear.x = 0.0
+                twist.angular.z = 0.0
+                self.cmd_pub.publish(twist)
+                print('Robot stopped')
+
     def get_scan(self):
-        scan = rospy.wait_for_message('scan', LaserScan)
+        scan = rclpy.wait_for_message('scan', LaserScan)
         scan_filter = []
        
         samples = len(scan.ranges)  # The number of samples is defined in 
-                                    # turtlebot3_<model>.gazebo.xacro file,
-                                    # the default is 360.
+                                    # turtlebot3_<model>.gazebo.xacro file.
+                                    # The default is 360.
         samples_view = 1            # 1 <= samples_view <= samples
         
         if samples_view > samples:
@@ -69,25 +96,3 @@ class Turtlebot3ObstacleDetection():
                 scan_filter[i] = 0
         
         return scan_filter
-
-    def obstacle(self):
-        twist = Twist()
-        turtlebot_moving = True
-
-        while not rospy.is_shutdown():
-            lidar_distances = self.get_scan()
-            min_distance = min(lidar_distances)
-
-            if min_distance < SAFE_STOP_DISTANCE:
-                if turtlebot_moving:
-                    twist.linear.x = 0.0
-                    twist.angular.z = 0.0
-                    self._cmd_pub.publish(twist)
-                    turtlebot_moving = False
-                    rospy.loginfo('Stop!')
-            else:
-                twist.linear.x = LINEAR_VELOCITY
-                twist.angular.z = 0.0
-                self._cmd_pub.publish(twist)
-                turtlebot_moving = True
-                rospy.loginfo('Distance of the obstacle : %f', min_distance)

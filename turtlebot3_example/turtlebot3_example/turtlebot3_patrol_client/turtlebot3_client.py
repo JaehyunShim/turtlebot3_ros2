@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim
+# Authors: Ryan Shim 
 
 import os
 import select
@@ -53,8 +53,21 @@ Communications Failed
 
 class Turtlebot3PatrolClient():
     def __init__(self):
-        rospy.loginfo("wait for server")
-        self.client()
+        rospy.loginfo("Wait for Server")
+
+        client = actionlib.SimpleActionClient('turtlebot3', turtlebot3_example.msg.Turtlebot3Action)
+
+        mode, area, count = self.getkey()
+        client.wait_for_server()
+        goal = turtlebot3_example.msg.Turtlebot3Goal()
+        goal.goal.x = mode
+        goal.goal.y = area
+        goal.goal.z = count
+        client.send_goal(goal)
+        print("send to goal")
+        client.wait_for_result()
+
+        print(client.get_result())
 
     def getkey(self):
         mode, area, count = raw_input("| mode | area | count |\n").split()
@@ -67,26 +80,8 @@ class Turtlebot3PatrolClient():
         elif mode == 'c':
             mode = 3
         elif mode == 'x':
-            self.shutdown()
+            rclpy.shutdown()
         else:
-            rospy.loginfo("you select wrong mode")
+            print("Pressed the Wrong Button!")
 
         return mode, area, count
-
-    def client(self):
-        client = actionlib.SimpleActionClient('turtlebot3', turtlebot3_example.msg.Turtlebot3Action)
-
-        mode, area, count = self.getkey()
-        client.wait_for_server()
-        goal = turtlebot3_example.msg.Turtlebot3Goal()
-        goal.goal.x = mode
-        goal.goal.y = area
-        goal.goal.z = count
-        client.send_goal(goal)
-        rospy.loginfo("send to goal")
-        client.wait_for_result()
-
-        rospy.loginfo(client.get_result())
-
-    def shutdown(self):
-        rospy.sleep(1)

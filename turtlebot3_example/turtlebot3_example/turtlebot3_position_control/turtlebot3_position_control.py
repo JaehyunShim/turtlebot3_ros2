@@ -46,8 +46,8 @@ If you want to close, insert 's'
 -----------------------
 """
 
-LINEAR_VELOCITY = 0.5  # unit: m/s
-ANGULAR_VELOCITY = 0.5 # unit: m/s
+LINEAR_VELOCITY = 0.5 # unit: m/s
+ANGULAR_VELOCITY = 0.5  # unit: m/s
 EPSILON = 0.05
 
 class Turtlebot3PositionControl(Node):
@@ -73,7 +73,7 @@ class Turtlebot3PositionControl(Node):
                 self.tf_listener.waitForTransform(self.odom_frame, 'base_link', rospy.Time(), rospy.Duration(1.0))
                 self.base_frame = 'base_link'
             except (tf.Exception, tf.ConnectivityException, tf.LookupException):
-                rospy.loginfo("Cannot find transform between odom and base_link or base_footprint")
+                self.get_logger().info("Cannot find transform between odom and base_link or base_footprint")
                 rospy.signal_shutdown("tf Exception")
 
         # Update goal pose
@@ -128,7 +128,7 @@ class Turtlebot3PositionControl(Node):
         y = raw_input("y: ")
         theta = raw_input("theta: ")
         while theta > 180 or theta < -180:
-            print("you input wrong theta range.")
+            self.get_logger().info("you input wrong theta range.")
             theta = raw_input("theta: ")
 
         # Convert ?? to double

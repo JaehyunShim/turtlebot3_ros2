@@ -38,7 +38,7 @@ class Turtlebot3InteractiveMarker():
         #
         server = InteractiveMarkerServer("turtlebot3_interactive_marker_server")
         qos = QoSProfile(depth=10)
-        vel_pub = rospy.Publisher("cmd_vel", Twist, queue_size = qos)
+        vel_pub = rospy.Publisher("cmd_vel", Twist, qos)
         interactive_marker = InteractiveMarker()
         interactive_marker.header.frame_id = "base_link"
         interactive_marker.name = "turtlebot3_marker"
@@ -69,7 +69,7 @@ class Turtlebot3InteractiveMarker():
         server.applyChanges()
 
     def processFeedback(feedback):
-        yaw = euler_from_quaternion((feedback.pose.orientation.x, feedback.pose.orientation.y, feedback.pose.orientation.z, feedback.pose.orientation.w))
+        _,_,yaw = euler_from_quaternion((feedback.pose.orientation.x, feedback.pose.orientation.y, feedback.pose.orientation.z, feedback.pose.orientation.w))
 
         twist = Twist()
         twist.angular.z = 2.2 * yaw

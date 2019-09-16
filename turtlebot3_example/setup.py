@@ -8,7 +8,7 @@ package_name = 'turtlebot3_example'
 
 setup(
     name=package_name,
-    version='',
+    version='1.0.0',
     packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
@@ -38,11 +38,11 @@ setup(
     license='Apache License, Version 2.0',
     entry_points={
         'console_scripts': [
-            'turtlebot3_interactive_marker = turtlebot3_interactive_marker.script.main:main'
-            'turtlebot3_obstacle_detection = turtlebot3_obstacle_detection.script.main:main'
-            'turtlebot3_patrol_client = turtlebot3_patrol_client.script.main:main'
-            'turtlebot3_patrol_server = turtlebot3_patrol_server.script.main:main'
-            'turtlebot3_position_control = turtlebot3_position_control.script.main:main'
+            # 'turtlebot3_interactive_marker = turtlebot3_interactive_marker.script.main:main'
+            # 'turtlebot3_obstacle_detection = turtlebot3_obstacle_detection.script.main:main'
+            # 'turtlebot3_patrol_client = turtlebot3_patrol_client.script.main:main'
+            # 'turtlebot3_patrol_server = turtlebot3_patrol_server.script.main:main'
+            # 'turtlebot3_position_control = turtlebot3_position_control.script.main:main'
         ],
     },
 )
