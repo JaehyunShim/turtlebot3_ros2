@@ -16,18 +16,17 @@
 #
 # Authors: Ryan Shim 
 
-import sys
-
 import rclpy
+from turtlebot3_example.turtlebot3_position_control.turtlebot3_position_control \
+    import Turtlebot3PositionControl
 
-from turtlebot3_example.turtlebot3_position_control.turtlebot3_position_control import Turtlebot3PositionControl
 
 def main(args=None):
     rclpy.init(args=args)
-    node = Turtlebot3PositionControl()
-    rclpy.spin(node)
+    turtlebot3_position_control = Turtlebot3PositionControl()
+    rclpy.spin(turtlebot3_position_control)
 
-    node.destroy_node()
+    turtlebot3_position_control.destroy_node()
     rclpy.shutdown()
 
 

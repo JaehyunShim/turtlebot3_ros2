@@ -14,19 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
 import rclpy
-
-from turtlebot3_example.turtlebot3_obstacle_detection.turtlebot3_obstacle_detection import Turtlebot3ObstacleDetection
+from turtlebot3_example.turtlebot3_obstacle_detection.turtlebot3_obstacle_detection \
+    import Turtlebot3ObstacleDetection
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = Turtlebot3ObstacleDetection()
-    rclpy.spin(node)
+    turtlebot3_obstacle_detection = Turtlebot3ObstacleDetection()
+    rclpy.spin(turtlebot3_obstacle_detection)
 
-    node.destroy_node()
+    # Destroy the node explicitly
+    turtlebot3_obstacle_detection.destroy_node()
     rclpy.shutdown()
 
 

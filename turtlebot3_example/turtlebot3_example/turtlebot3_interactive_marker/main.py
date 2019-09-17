@@ -17,16 +17,16 @@
 # Authors: Ryan Shim 
 
 import rclpy
-
-from turtlebot3_example.turtlebot3_interactive_marker.turtlebot3_interactive_marker import Turtlebot3InteractiveMarker
+from turtlebot3_example.turtlebot3_interactive_marker.turtlebot3_interactive_marker \
+    import Turtlebot3InteractiveMarker
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = Turtlebot3InteractiveMarker()
-    rclpy.spin(node)
+    turtlebot3_obstacle_detection = Turtlebot3InteractiveMarker()
+    rclpy.spin(turtlebot3_obstacle_detection)
 
-    node.destroy_node()
+    turtlebot3_obstacle_detection.destroy_node()
     rclpy.shutdown()
 
 

@@ -30,9 +30,17 @@ TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
 
 def generate_launch_description():
     return LaunchDescription([
+        # Node(
+            # package='turtlebot3_teleop',
+            # node_executable='teleop_keyboard',
+            # node_name='teleop_keyboard',
+            # arguments=[{cmd_vel:=cmd_vel_raw}]),
+            # output='screen'
+            # ),
+
         Node(
             package='turtlebot3_example',
-            node_executable='turtlebot3_obstacle',
-            node_name='turtlebot3_obstacle',
+            node_executable='turtlebot3_obstacle_detection',
+            node_name='turtlebot3_obstacle_detection',
             output='screen'),
     ])

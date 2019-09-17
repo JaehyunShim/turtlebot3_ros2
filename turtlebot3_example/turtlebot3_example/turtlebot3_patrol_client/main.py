@@ -17,15 +17,15 @@
 # Authors: Ryan Shim 
 
 import rclpy
-
 from turtlebot3_example.turtlebot3_patrol_client.turtlebot3_patrol_client import Turtlebot3PatrolClient
 
-def main():
-    rclpy.init(args=args)
-    node = Turtlebot3PatrolClient()
-    rclpy.spin(node)
 
-    node.destroy_node()
+def main(args=None):
+    rclpy.init(args=args)
+    turtlebot3_patrol_client = Turtlebot3PatrolClient()
+    rclpy.spin(turtlebot3_patrol_client)
+
+    turtlebot3_patrol_client.destroy_node()
     rclpy.shutdown()
 
 
