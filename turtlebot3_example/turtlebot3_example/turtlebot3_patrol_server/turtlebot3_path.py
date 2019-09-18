@@ -30,7 +30,7 @@ LINEAR_VELOCITY = 0.5 # unit: m/s
 ANGULAR_VELOCITY = 0.5  # unit: m/s
 
 
-class Drawing(object):
+class Turtlebot3_Path(object):
     def turn(self, angle):
         self.init_right_encoder = self.right_encoder
         diff_encoder = (math.radians(angle) * self.turning_radius) / (WHEEL_RADIUS * TICK2RAD)
@@ -49,7 +49,7 @@ class Drawing(object):
         self.cmd_pub.publish(self.twist)
         self.r.sleep()
 
-    def go_front(self, length):
+    def go_straight(self, length):
         self.start_position = self.position
         self.twist.linear.x = LINEAR_MAX_VELOCITY
         self.twist.angular.z = 0.0

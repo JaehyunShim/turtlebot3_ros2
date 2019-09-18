@@ -17,10 +17,11 @@
 # Authors: Ryan Shim
 
 from geometry_msgs.msg import Twist
-import numpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, qos_profile_sensor_data
+from rclpy.qos import QoSProfile
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
+import numpy
 
 
 class Turtlebot3ObstacleDetection(Node):
@@ -31,8 +32,8 @@ class Turtlebot3ObstacleDetection(Node):
         """************************************************************
         ** Initialise variables
         ************************************************************"""
-        self.linear_velocity = 0.0
-        self.angular_velocity = 0.0
+        self.linear_velocity = 0.0  # unit: m/s
+        self.angular_velocity = 0.0  # unit: m/s
         self.scan_ranges = numpy.ones(360) * numpy.Infinity  # Scan resolution is 360
 
         """************************************************************
@@ -41,7 +42,7 @@ class Turtlebot3ObstacleDetection(Node):
         qos = QoSProfile(depth=10)
 
         # Initialise publishers
-        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', qos)
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
 
         # Initialise subscribers
         self.scan_sub = self.create_subscription(
@@ -49,7 +50,7 @@ class Turtlebot3ObstacleDetection(Node):
             'scan',
             self.scan_callback,
             qos_profile=qos_profile_sensor_data)
-        self.raw_cmd_sub = self.create_subscription(
+        self.raw_cmd_vel_sub = self.create_subscription(
             Twist,
             'raw_cmd_vel',
             self.cmd_vel_callback,
@@ -64,7 +65,7 @@ class Turtlebot3ObstacleDetection(Node):
 
         self.get_logger().info("Turtlebot3 obstacle detection node has been initialised.")
 
-    """********************************************************************************
+    """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def scan_callback(self, msg):
@@ -82,9 +83,9 @@ class Turtlebot3ObstacleDetection(Node):
         if obstacle_distance > safety_distance:
             twist.linear.x = self.linear_velocity
             twist.angular.z = self.angular_velocity
-            self.cmd_pub.publish(twist)
         else:
             twist.linear.x = 0.0
             twist.angular.z = 0.0
-            self.cmd_pub.publish(twist)
             self.get_logger().info("Obstacles are detected nearby. Robot stopped.")
+
+        self.cmd_vel_pub.publish(twist)

@@ -14,160 +14,126 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
 import os
 import select
 import sys
 import termios
 import tty
-
-import rclpy
-from rclpy.qos import QoSProfile
-
-
-from geometry_msgs.msg import Point
+# import tf2
+import numpy
+import math
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import Twist
-import tf
-import np
-from math import radians, copysign, sqrt, pi, atan2
-from tf.transformations import euler_from_quaternion
-from tf2_ros.src.tf2_ros.transform_listener import TransformListener
+from nav_msgs.msg import Odometry
+from rclpy.qos import QoSProfile
+from rclpy.node import Node
+from turtlebot3_example.turtlebot3_position_control.turtlebot3_path import Turtlebot3_Path
 
-msg = """
-control your Turtlebot3!
+terminal_msg = """
+Position control your Turtlebot3!
 -----------------------
-Insert xyz - coordinate.
-x : position x (m)
-y : position y (m)
-z : orientation z (degree: -180 ~ 180)
-If you want to close, insert 's'
+x : goal position x (m)
+y : goal position y (m)
+theta : goal orientation z (range: -180 ~ 180)
 -----------------------
 """
 
-LINEAR_VELOCITY = 0.5 # unit: m/s
-ANGULAR_VELOCITY = 0.5  # unit: m/s
-EPSILON = 0.05
 
 class Turtlebot3PositionControl(Node):
 
     def __init__(self):
+        super().__init__('turtlebot3_position_control')
 
         """************************************************************
         ** Initialise variables
         ************************************************************"""
+        self.odom = Odometry()
+        self.step = 0
+        self.last_pose_x = 0
+        self.last_pose_y = 0
+        self.last_pose_theta = 0
+        self.goal_pose_x = 0
+        self.goal_pose_y = 0
+        self.goal_pose_theta = 0
 
         """************************************************************
-        ** Initialise ROS subscribers and servers
+        ** Initialise ROS publishers and subscribers
         ************************************************************"""
-        settings = termios.tcgetattr(sys.stdin)
-
         qos = QoSProfile(depth=10)
-        pub = node.create_publisher(Twist, 'cmd_vel', qos)
 
-        rospy.init_node('turtlebot3_position_control', anonymous=False)
-        rospy.on_shutdown(self.shutdown)
-        self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
-        self.tf_listener = tf.TransformListener()
-        self.odom_frame = 'odom'
+        # Initialise publishers
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
 
-        try:
-            self.tf_listener.waitForTransform(self.odom_frame, 'base_footprint', rospy.Time(), rospy.Duration(1.0))
-            self.base_frame = 'base_footprint'
-        except (tf.Exception, tf.ConnectivityException, tf.LookupException):
-            try:
-                self.tf_listener.waitForTransform(self.odom_frame, 'base_link', rospy.Time(), rospy.Duration(1.0))
-                self.base_frame = 'base_link'
-            except (tf.Exception, tf.ConnectivityException, tf.LookupException):
-                self.get_logger().info("Cannot find transform between odom and base_link or base_footprint")
-                rospy.signal_shutdown("tf Exception")
-
-        # Update goal pose
-        (goal_x, goal_y, goal_theta) = self.get_key()   
+        # Initialise subscribers
+        self.odom_sub = self.create_subscription(
+            Odometry,
+            'odom',
+            self.odom_callback,
+            qos)
 
         """************************************************************
         ** Initialise timers
         ************************************************************"""
         self.update_timer = self.create_timer(1.0, self.update_callback)  # unit: s
 
-    """********************************************************************************
+        self.get_logger().info("Turtlebot3 position control node has been initialised.")
+
+        """************************************************************
+        ** Get keyboard input
+        ************************************************************"""
+        settings = termios.tcgetattr(sys.stdin)
+        try:
+            while(1):
+                print(terminal_msg)
+                self.get_key(settings)   
+
+        except Exception as e:
+            print(e)
+
+        finally:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
+
+    """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def get_key(self, settings):
+        input_x = input("Input x: ")
+        input_y = input("Input y: ")
+        input_theta = input("Input theta: ")
+        while float(input_theta) > 180 or float(input_theta) < -180:
+            self.get_logger().info("Enter a value for theta between -180 and 180")
+            input_theta = input("Input theta: ")
+
+        self.goal_pose_x = float(input_x)
+        self.goal_pose_y = float(input_y)
+        self.goal_pose_theta = numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
+
+    def odom_callback(self, msg):
+        self.last_pose_x = msg.pose.pose.position.x
+        self.last_pose_y = msg.pose.pose.position.y
+        # tf::Matrix3x3 m(q) = Matrix3x3()
+        # m.getRPY(0, 0, last_pose_theta)
+        # self.last_pose_theta = msg.pose.pose.position.theta
+        self.last_pose_theta = msg.pose.pose.position.x
+
     def update_callback(self):
-        # Get odometry
-        (curr_x, curr_y, curr_theta) = self.get_odometry() # Pose in the world cordinate 
-        # (curr_x, curr_y, curr_theta) = [0 0 0]  # Pose in the local cordinate 
         twist = Twist()
 
-        # Rotate towards the goal position (towards the goal path)
-        path_theta = math.atan2(goal_y-curr_y, goal_x-curr_x)
-        diff_theta = path_theta - curr_theta
-        if math.fabs((diff_theta) > EPSILON:
-            if diff_theta >= pi:
-                twist.angular.z = -ANGULAR_VELOCITY
-            elif pi > diff_theta and diff_theta >= 0:
-                twist.angular.z = ANGULAR_VELOCITY
-            elif 0 > diff_theta and diff_theta >= -pi:
-                twist.angular.z = -ANGULAR_VELOCITY
-            elif diff_theta > -pi:
-                twist.angular.z = ANGULAR_VELOCITY
+        if self.step == 1:  # Step 1: Turn
+            path_theta = math.atan2( 
+                self.goal_pose_y-self.last_pose_y, 
+                self.goal_pose_x-self.last_pose_x)
+            angle = path_theta - last_pose_theta
+            twist, self.step = Turtlebot3_Path.turn(angle, self.step)
+        elif self.step == 2:  # Step 2: Go Straight
+            distance = math.sqrt((goal_pose_x-last_pose_x)**2  + (goal_pose_y-last_pose_y)**2)
+            twist = Turtlebot3_Path.go_straight(distance)
+        elif self.step == 3:  # Step 3: Turn
+            angle = goal_pose_theta - last_pose_theta
+            twist = Turtlebot3_Path.turn(angle)
+        else:  # Reset
+            self.step == 0
 
-            self.cmd_vel.publish(twist)
-
-        # Move towards the goal position
-        path_distance = math.sqrt((goal_x-curr_x)**2  + (goal_y-curr_y)**2)
-        if path_distance > EPSILON:
-            twist.linear.x = LINEAR_VELOCITY
-
-            self.cmd_vel.publish(twist)
-
-        # Rotate to the goal orientation
-        diff_theta = goal_theta - curr_theta
-        if math.fabs((diff_theta) > EPSILON:
-            if diff_theta >= pi:
-                twist.angular.z = -ANGULAR_VELOCITY
-            elif pi > diff_theta and diff_theta >= 0:
-                twist.angular.z = ANGULAR_VELOCITY
-            elif 0 > diff_theta and diff_theta >= -pi:
-                twist.angular.z = -ANGULAR_VELOCITY
-            elif diff_theta > -pi:
-                twist.angular.z = ANGULAR_VELOCITY
-
-            self.cmd_vel.publish(twist)
-
-    def get_key(self):
-        x = raw_input("x: ")
-        y = raw_input("y: ")
-        theta = raw_input("theta: ")
-        while theta > 180 or theta < -180:
-            self.get_logger().info("you input wrong theta range.")
-            theta = raw_input("theta: ")
-
-        # Convert ?? to double
-        x = double(x) 
-        y = double(y) 
-        theta = np.deg2rad(double(theta)) # Convert [deg] to [rad]
-
-        return x, y, theta
-
-    def get_odometry(self):
-        try:
-            (trans, rot) = self.tf_listener.lookupTransform(self.odom_frame, self.base_frame, rospy.Time(0))
-            rotation = euler_from_quaternion(rot)
-
-        except (tf.Exception, tf.ConnectivityException, tf.LookupException):
-            elif pi > diff_theta and diff_theta >= 0:
-                twist.angular.z = ANGULAR_VELOCITY
-            elif 0 > diff_theta and diff_theta >= -pi:
-                twist.angular.z = -ANGULAR_VELOCITY
-            elif diff_theta > -pi:
-                twist.angular.z = ANGULAR_VELOCITY
-
-            rospy.loginfo("TF Exception")
-            return
-
-            self.cmd_vel.publish(twist)
-
-        point = Point(*trans)
-        return (point.x, point.y, rotation[2])
+        self.cmd_vel_pub.publish(twist)
