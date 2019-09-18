@@ -58,9 +58,11 @@ class Turtlebot3ObstacleDetection(Node):
         """************************************************************
         ** Initialise timers
         ************************************************************"""
-        self.detect_timer = self.create_timer(0.010, self.detect_obstacle_callback)  # unit: s
+        self.obstacle_detection_timer = self.create_timer(
+            0.010,  # unit: s
+            self.obstacle_detection_callback)
 
-        self.get_logger().info("Turtlebot3 Obstacle detection node has been initialised.")
+        self.get_logger().info("Turtlebot3 obstacle detection node has been initialised.")
 
     """********************************************************************************
     ** Callback functions and relevant functions
@@ -72,7 +74,7 @@ class Turtlebot3ObstacleDetection(Node):
         self.linear_velocity = msg.linear.x
         self.angular_velocity = msg.angular.z
 
-    def detect_obstacle_callback(self):
+    def obstacle_detection_callback(self):
         twist = Twist()
         obstacle_distance = min(self.scan_ranges)
         safety_distance = 0.2  # unit: m

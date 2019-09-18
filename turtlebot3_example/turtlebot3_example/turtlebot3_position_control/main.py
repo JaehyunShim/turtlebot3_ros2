@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
 import rclpy
 from turtlebot3_example.turtlebot3_position_control.turtlebot3_position_control \

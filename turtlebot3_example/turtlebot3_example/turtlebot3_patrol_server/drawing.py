@@ -26,11 +26,11 @@ from turtlebot3_msgs.action import Patrol
 import math
 import os
 
-
 LINEAR_VELOCITY = 0.5 # unit: m/s
 ANGULAR_VELOCITY = 0.5  # unit: m/s
 
-class Turtlebot3Action(object):
+
+class Drawing(object):
     def turn(self, angle):
         self.init_right_encoder = self.right_encoder
         diff_encoder = (math.radians(angle) * self.turning_radius) / (WHEEL_RADIUS * TICK2RAD)

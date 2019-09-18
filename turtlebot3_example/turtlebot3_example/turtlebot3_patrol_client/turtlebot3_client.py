@@ -25,7 +25,6 @@ import tty
 import rclpy
 from rclpy.qos import QoSProfile
 
-
 from __future__ import print_function
 import actionlib
 import turtlebot3_example.msg
@@ -51,10 +50,18 @@ Communications Failed
 """ 
 
 
-class Turtlebot3PatrolClient():
-    def __init__(self):
-        rospy.loginfo("Wait for Server")
+class Turtlebot3PatrolClient(Node):
 
+    def __init__(self):
+        super().__init__('turtlebot3_patrol_client')
+
+        """************************************************************
+        ** Initialise variables
+        ************************************************************"""
+
+        """************************************************************
+        ** Initialise ROS clients
+        ************************************************************"""
         client = actionlib.SimpleActionClient('turtlebot3', turtlebot3_example.msg.Turtlebot3Action)
 
         mode, area, count = self.getkey()
@@ -69,6 +76,9 @@ class Turtlebot3PatrolClient():
 
         print(client.get_result())
 
+    """********************************************************************************
+    ** Callback functions and relevant functions
+    *******************************************************************************"""
     def getkey(self):
         mode, area, count = raw_input("| mode | area | count |\n").split()
         mode, area, count = [str(mode), float(area), int(count)]

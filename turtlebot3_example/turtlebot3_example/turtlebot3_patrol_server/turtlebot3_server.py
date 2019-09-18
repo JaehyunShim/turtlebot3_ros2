@@ -16,25 +16,41 @@
 #
 # Authors: Ryan Shim 
 
-from rcl_interfaces.msg import ParameterDescriptor
-import rospy
 import actionlib
-from geometry_msgs.msg import Twist, Point, Quaternion
+import math
+import os
+import rclpy
+from rcl_interfaces.msg import ParameterDescriptor
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Quaternion
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 from turtlebot3_msgs.msg import SensorState
 from turtlebot3_msgs.action import Patrol
-import math
-import os
 from time import sleep
 
 
-class Turtlebot3Action(object):
-    def __init__(self, name):
-        super().__init__('minimal_action_server')
+class Turtlebot3PatrolServer(Node):
+
+    def __init__(self):
+        super().__init__('turtlebot3_patrol_server')
+
+        """************************************************************
+        ** Initialise variables
+        ************************************************************"""
+
+        """************************************************************
+        ** Initialise ROS subscribers and servers
+        ************************************************************"""
         self.qos = QoSProfile(depth=10)
 
-        self._action_server = actionlib.ActionServer(
+        # Initialise subscribers
+        self.odom_sub = rclpy.create_subscription(Odometry, 'odom', self.odom_callback, self.qos)
+        self.joint_states_sub = rclpy.create_subscription(JointState, 'joint_states', self.joint_state_callback, self.qos)
+
+        # Initialise servers
+        self.action_server = actionlib.ActionServer(
             self,
             Patrol
             'patrol'
@@ -42,20 +58,20 @@ class Turtlebot3Action(object):
             goal_callback=self.goal_callback,
             cancel_callback=self.cancel_callback)          
 
-        self.odom_sub = rclpy.create_subscription(Odometry, 'odom', self.get_odom, self.qos)
-        self.joint_states_sub = rclpy.create_subscription(JointState, 'joint_states', self.get_joint_state, self.qos)
-
         self.get_logger().info("Turtlebot3 patrol action server has been initialised.")
 
+    """********************************************************************************
+    ** Callback functions and relevant functions
+    *******************************************************************************"""
     def goal_callback(self, goal_request):
         """Accepts or rejects a client request to begin an action."""
         # This server allows multiple goals in parallel
-        self.get_logger().info('Received goal request')
+        self.get_logger().info("Received goal request")
         return GoalResponse.ACCEPT
 
     def cancel_callback(self, goal_handle):
         """Accepts or rejects a client request to cancel an action."""
-        self.get_logger().info('Received cancel request')
+        self.get_logger().info("Received cancel request")
         return CancelResponse.ACCEPT
 
     async def execute_callback(self, goal_handle):
@@ -81,10 +97,10 @@ class Turtlebot3Action(object):
             elif mode == 3:
                 self.draw_circle(distance, i == (patrol_count - 1))
 
-    def get_odom(self, odom):
+    def odom_callback(self, odom):
         self.position = odom.pose.pose.position
 
-    def get_joint_state(self, data):
+    def joint_state_callback(self, data):
         last_pos = 0.0
         cur_pos = data.position[0]
         diff_pos = cur_pos - last_pos

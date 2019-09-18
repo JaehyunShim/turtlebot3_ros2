@@ -35,6 +35,19 @@ import copy
 
 class Turtlebot3InteractiveMarker():
     def __init__(self):
+        super().__init__('turtlebot3_interactive_marker')
+
+        """************************************************************
+        ** Initialise variables
+        ************************************************************"""
+
+        """************************************************************
+        ** Initialise ROS publishers and subscribers
+        ************************************************************"""
+
+        """************************************************************
+        ** Initialise timers
+        ************************************************************"""
         #
         server = InteractiveMarkerServer("turtlebot3_interactive_marker_server")
         qos = QoSProfile(depth=10)
@@ -68,6 +81,9 @@ class Turtlebot3InteractiveMarker():
         server.insert(interactive_marker, processFeedback)
         server.applyChanges()
 
+    """********************************************************************************
+    ** Callback functions and relevant functions
+    *******************************************************************************"""
     def processFeedback(feedback):
         _,_,yaw = euler_from_quaternion((feedback.pose.orientation.x, feedback.pose.orientation.y, feedback.pose.orientation.z, feedback.pose.orientation.w))
 
