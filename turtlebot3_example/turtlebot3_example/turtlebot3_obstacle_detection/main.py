@@ -29,5 +29,6 @@ def main(args=None):
     turtlebot3_obstacle_detection.destroy_node()
     rclpy.shutdown()
 
+
 if __name__ == '__main__':
     main()
