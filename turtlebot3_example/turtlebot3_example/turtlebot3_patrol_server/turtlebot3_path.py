@@ -14,65 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
-import rospy
-import actionlib
-from geometry_msgs.msg import Twist, Point, Quaternion
-from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState
-from turtlebot3_msgs.msg import SensorState
-from turtlebot3_msgs.action import Patrol
 import math
-import os
-
-LINEAR_VELOCITY = 0.5 # unit: m/s
-ANGULAR_VELOCITY = 0.5  # unit: m/s
+from geometry_msgs.msg import Twist
 
 
-class Turtlebot3_Path(object):
-    def turn(self, angle):
-        self.init_right_encoder = self.right_encoder
-        diff_encoder = (math.radians(angle) * self.turning_radius) / (WHEEL_RADIUS * TICK2RAD)
-        direct_sign = 1
-        if diff_encoder <= 0:
-            direct_sign = -1
+class Turtlebot3Path():
 
-        self.twist.linear.x = 0.0
-        self.twist.angular.z = ANGULAR_MAX_VELOCITY * direct_sign
-        
-        while (abs(self.init_right_encoder - self.right_encoder) < abs(diff_encoder)):
-            self.cmd_pub.publish(self.twist)
-            self.r.sleep()
+    def drive_circle(radius, velocity):
+        twist = Twist()
+        linear_velocity = velocity  # unit: m/s
+        angular_velocity = linear_velocity / radius  # unit: rad/s
 
-        self.twist.angular.z = 0
-        self.cmd_pub.publish(self.twist)
-        self.r.sleep()
+        twist.linear.x = linear_velocity
+        twist.angular.z = angular_velocity
 
-    def go_straight(self, length):
-        self.start_position = self.position
-        self.twist.linear.x = LINEAR_MAX_VELOCITY
-        self.twist.angular.z = 0.0
-            
-        while math.sqrt((position.x-start_position.x)**2  + (position.y-start_position.y)**2) < length:
-            self.cmd_pub.publish(self.twist)
-            self.r.sleep()
-
-        self.twist.linear.x = 0.0
-        self.cmd_pub.publish(self.twist)
-        self.r.sleep()
-
-    def draw_circle(self, radius, last_circle):
-        self.init_right_encoder = self.right_encoder
-        diff_encoder = (2 * math.pi * (radius + self.turning_radius)) / (WHEEL_RADIUS * TICK2RAD)
-        while (abs(self.init_right_encoder - self.right_encoder) <= abs(diff_encoder)):
-            self.twist.linear.x = LINEAR_MAX_VELOCITY
-            self.twist.angular.z = LINEAR_MAX_VELOCITY / radius
-            self.cmd_pub.publish(self.twist)
-            self.r.sleep()
-
-        if last_circle :
-            self.twist.linear.x = 0
-            self.twist.angular.z = 0
-            self.cmd_pub.publish(self.twist)
-            self.r.sleep()
+        return twist

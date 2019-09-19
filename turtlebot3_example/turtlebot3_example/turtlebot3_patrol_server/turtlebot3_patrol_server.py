@@ -22,7 +22,6 @@ import os
 import rclpy
 from rcl_interfaces.msg import ParameterDescriptor
 from geometry_msgs.msg import Twist
-from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
@@ -39,14 +38,30 @@ class Turtlebot3PatrolServer(Node):
         """************************************************************
         ** Initialise variables
         ************************************************************"""
+        self.odom = Odometry()
+        self.step = 0
+        self.last_pose_x = 0
+        self.last_pose_y = 0
+        self.last_pose_theta = 0
+        self.goal_pose_x = 0
+        self.goal_pose_y = 0
+        self.goal_pose_theta = 0
+        self.complete == False
 
         """************************************************************
         ** Initialise ROS subscribers and servers
         ************************************************************"""
         self.qos = QoSProfile(depth=10)
 
+        # Initialise publishers
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
+
         # Initialise subscribers
-        self.odom_sub = rclpy.create_subscription(Odometry, 'odom', self.odom_callback, self.qos)
+        self.odom_sub = self.create_subscription(
+            Odometry,
+            'odom',
+            self.odom_callback,
+            qos)
         self.joint_states_sub = rclpy.create_subscription(JointState, 'joint_states', self.joint_state_callback, self.qos)
 
         # Initialise servers
@@ -54,15 +69,26 @@ class Turtlebot3PatrolServer(Node):
             self,
             Patrol
             'patrol'
-            execute_callback=self.execute_callback,
+            execute_callback=self.generate_path_callback,
             goal_callback=self.goal_callback,
             cancel_callback=self.cancel_callback)          
 
+        """************************************************************
+        ** Initialise timers
+        ************************************************************"""
+        self.generate_path_timer = self.create_timer(0.010, self.generate_path_callback)  # unit: s
+
         self.get_logger().info("Turtlebot3 patrol action server has been initialised.")
 
-    """********************************************************************************
+    """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def odom_callback(self, odom):
+        self.last_pose_x = msg.pose.pose.position.x
+        self.last_pose_y = msg.pose.pose.position.y
+        # self.last_pose_theta = euler_from_quaternion(msg.pose.pose.orientation)
+        self.last_pose_theta = 0
+
     def goal_callback(self, goal_request):
         """Accepts or rejects a client request to begin an action."""
         # This server allows multiple goals in parallel
@@ -74,34 +100,13 @@ class Turtlebot3PatrolServer(Node):
         self.get_logger().info("Received cancel request")
         return CancelResponse.ACCEPT
 
-    async def execute_callback(self, goal_handle):
-        self.cmd_pub = rclpy.create_publisher(Twist, 'cmd_vel', self.qos)
-        self.twist = Twist()
+    async def generate_path_callback(self, goal_handle):
+        twist = Twist()
         feedback_msg = Patrol.Feedback()
+        goal_pose_x = Patrol.Goal[0]
+        goal_pose_y = Patrol.Goal[1]
 
-        mode = Patrol.Goal[0]
-        distance = Patrol.Goal[1]
-        patrol_count = int(Patrol.Goal[2])
+        velocity = 0.5  # unit: m/s
+        twist = Turtlebot3Path.drive_circle(radius, velocity)
 
-        for i in range(patrol_count):
-            if mode == 1:
-                for i in range(4):
-                    self.go_front(distance)
-                    sleep(1)
-                    self.turn(90)
-            elif mode == 2:
-                for i in range(3):
-                    self.go_front(distance)
-                    sleep(1)
-                    self.turn(120)
-            elif mode == 3:
-                self.draw_circle(distance, i == (patrol_count - 1))
-
-    def odom_callback(self, odom):
-        self.position = odom.pose.pose.position
-
-    def joint_state_callback(self, data):
-        last_pos = 0.0
-        cur_pos = data.position[0]
-        diff_pos = cur_pos - last_pos
-        self.right_encoder = diff_pos / TICK2RAD)
+        self.cmd_vel_pub.publish(twist)

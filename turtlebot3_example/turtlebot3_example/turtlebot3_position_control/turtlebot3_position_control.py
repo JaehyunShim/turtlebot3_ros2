@@ -17,23 +17,25 @@
 # Authors: Ryan Shim
 
 import sys
-import termios
 # import tf2
+import termios
 import numpy
 import math
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from rclpy.qos import QoSProfile
 from rclpy.node import Node
+from rclpy.qos import QoSProfile
 from turtlebot3_example.turtlebot3_position_control.turtlebot3_path import Turtlebot3Path
 
 terminal_msg = """
-Position control your Turtlebot3!
------------------------
-x : goal position x (m)
-y : goal position y (m)
-theta : goal orientation z (range: -180 ~ 180)
------------------------
+Turtlebot3 Position Control 
+------------------------------------------------------
+In the relative coordinate system
+
+x: goal position x (unit: m)
+y: goal position y (unit: m)
+theta: goal orientation (range: -180 ~ 180, unit: deg)
+------------------------------------------------------
 """
 
 
@@ -91,9 +93,10 @@ class Turtlebot3PositionControl(Node):
             input_theta = input("Input theta: ")
 
         self.step = 1
-        self.goal_pose_x = float(input_x)
-        self.goal_pose_y = float(input_y)
-        self.goal_pose_theta = numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
+        self.goal_pose_x = self.last_pose_x + float(input_x) 
+        self.goal_pose_y = self.last_pose_y + float(input_y)
+        self.goal_pose_theta = 
+            self.last_pose_theta + numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
 
     def odom_callback(self, msg):
@@ -111,18 +114,24 @@ class Turtlebot3PositionControl(Node):
                 self.goal_pose_y-self.last_pose_y,
                 self.goal_pose_x-self.last_pose_x)
             angle = path_theta - self.last_pose_theta
-            twist, self.step = Turtlebot3Path.turn(angle, self.step)
+            angular_velocity = 0.5  # unit: rad/s
+
+            twist, self.step = Turtlebot3Path.turn(angle, angular_velocity, self.step)
 
         # Step 2: Go Straight
         elif self.step == 2:
             distance = math.sqrt(
                 (self.goal_pose_x-self.last_pose_x)**2 + (self.goal_pose_y-self.last_pose_y)**2)
-            twist, self.step = Turtlebot3Path.go_straight(distance, self.step)
+            linear_velocity = 0.5  # unit: m/s
+
+            twist, self.step = Turtlebot3Path.go_straight(distance, linear_velocity, self.step)
 
         # Step 3: Turn
         elif self.step == 3:
             angle = self.goal_pose_theta - self.last_pose_theta
-            twist, self.step = Turtlebot3Path.turn(angle, self.step)
+            angular_velocity = 0.5  # unit: rad/s
+
+            twist, self.step = Turtlebot3Path.turn(angle, angular_velocity, self.step)
 
         # Reset
         else:
