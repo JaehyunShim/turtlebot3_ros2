@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
 import math
 from geometry_msgs.msg import Twist
@@ -24,11 +24,11 @@ ANGULAR_VELOCITY = 0.5  # unit: m/s
 EPSILON = 0.05  # Small enough value
 
 
-class Turtlebot3_Path():
+class Turtlebot3Path():
 
-    def turn(self, angle, step):
+    def turn(angle, step):
         twist = Twist()
-        
+
         if math.fabs(angle) > EPSILON:
             if angle >= math.pi:
                 twist.angular.z = -ANGULAR_VELOCITY
@@ -43,7 +43,7 @@ class Turtlebot3_Path():
 
         return twist, step
 
-    def go_straight(self, distance):
+    def go_straight(distance, step):
         twist = Twist()
 
         if distance > EPSILON:

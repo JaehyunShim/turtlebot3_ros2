@@ -29,7 +29,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.qos import QoSProfile
 from rclpy.node import Node
-from turtlebot3_example.turtlebot3_position_control.turtlebot3_path import Turtlebot3_Path
+from turtlebot3_example.turtlebot3_position_control.turtlebot3_path import Turtlebot3Path
 
 terminal_msg = """
 Position control your Turtlebot3!
@@ -76,29 +76,17 @@ class Turtlebot3PositionControl(Node):
         """************************************************************
         ** Initialise timers
         ************************************************************"""
-        self.update_timer = self.create_timer(1.0, self.update_callback)  # unit: s
+        self.generate_path_timer = self.create_timer(0.010, self.generate_path_callback)  # unit: s
+        self.get_key_timer = self.create_timer(0.010, self.get_key_callback)  # unit: s
 
         self.get_logger().info("Turtlebot3 position control node has been initialised.")
-
-        """************************************************************
-        ** Get keyboard input
-        ************************************************************"""
-        settings = termios.tcgetattr(sys.stdin)
-        try:
-            while(1):
-                print(terminal_msg)
-                self.get_key(settings)   
-
-        except Exception as e:
-            print(e)
-
-        finally:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def get_key(self, settings):
+    def get_key_callback(self):
+        print(terminal_msg)
+        settings = termios.tcgetattr(sys.stdin)
         input_x = input("Input x: ")
         input_y = input("Input y: ")
         input_theta = input("Input theta: ")
@@ -106,34 +94,42 @@ class Turtlebot3PositionControl(Node):
             self.get_logger().info("Enter a value for theta between -180 and 180")
             input_theta = input("Input theta: ")
 
+        self.step = 1
         self.goal_pose_x = float(input_x)
         self.goal_pose_y = float(input_y)
         self.goal_pose_theta = numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
 
     def odom_callback(self, msg):
         self.last_pose_x = msg.pose.pose.position.x
         self.last_pose_y = msg.pose.pose.position.y
-        # tf::Matrix3x3 m(q) = Matrix3x3()
-        # m.getRPY(0, 0, last_pose_theta)
-        # self.last_pose_theta = msg.pose.pose.position.theta
-        self.last_pose_theta = msg.pose.pose.position.x
+        # self.last_pose_theta = euler_from_quaternion(msg.pose.pose.orientation)
+        self.last_pose_theta = 0
 
-    def update_callback(self):
+    def generate_path_callback(self):
         twist = Twist()
 
-        if self.step == 1:  # Step 1: Turn
+        # Step 1: Turn
+        if self.step == 1:  
             path_theta = math.atan2( 
                 self.goal_pose_y-self.last_pose_y, 
                 self.goal_pose_x-self.last_pose_x)
-            angle = path_theta - last_pose_theta
-            twist, self.step = Turtlebot3_Path.turn(angle, self.step)
-        elif self.step == 2:  # Step 2: Go Straight
-            distance = math.sqrt((goal_pose_x-last_pose_x)**2  + (goal_pose_y-last_pose_y)**2)
-            twist = Turtlebot3_Path.go_straight(distance)
-        elif self.step == 3:  # Step 3: Turn
-            angle = goal_pose_theta - last_pose_theta
-            twist = Turtlebot3_Path.turn(angle)
-        else:  # Reset
+            angle = path_theta - self.last_pose_theta
+            twist, self.step = Turtlebot3Path.turn(angle, self.step)
+
+        # Step 2: Go Straight
+        elif self.step == 2:  
+            distance = math.sqrt(
+                (self.goal_pose_x-self.last_pose_x)**2  + (self.goal_pose_y-self.last_pose_y)**2)
+            twist, self.step = Turtlebot3Path.go_straight(distance, self.step)
+
+        # Step 3: Turn
+        elif self.step == 3:  
+            angle = self.goal_pose_theta - self.last_pose_theta
+            twist, self.step = Turtlebot3Path.turn(angle, self.step)
+        
+        # Reset
+        else: 
             self.step == 0
 
         self.cmd_vel_pub.publish(twist)
