@@ -16,15 +16,11 @@
 #
 # Authors: Ryan Shim
 
-import os
-import select
 import sys
 import termios
-import tty
 # import tf2
 import numpy
 import math
-from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.qos import QoSProfile
@@ -110,26 +106,26 @@ class Turtlebot3PositionControl(Node):
         twist = Twist()
 
         # Step 1: Turn
-        if self.step == 1:  
-            path_theta = math.atan2( 
-                self.goal_pose_y-self.last_pose_y, 
+        if self.step == 1:
+            path_theta = math.atan2(
+                self.goal_pose_y-self.last_pose_y,
                 self.goal_pose_x-self.last_pose_x)
             angle = path_theta - self.last_pose_theta
             twist, self.step = Turtlebot3Path.turn(angle, self.step)
 
         # Step 2: Go Straight
-        elif self.step == 2:  
+        elif self.step == 2:
             distance = math.sqrt(
-                (self.goal_pose_x-self.last_pose_x)**2  + (self.goal_pose_y-self.last_pose_y)**2)
+                (self.goal_pose_x-self.last_pose_x)**2 + (self.goal_pose_y-self.last_pose_y)**2)
             twist, self.step = Turtlebot3Path.go_straight(distance, self.step)
 
         # Step 3: Turn
-        elif self.step == 3:  
+        elif self.step == 3:
             angle = self.goal_pose_theta - self.last_pose_theta
             twist, self.step = Turtlebot3Path.turn(angle, self.step)
-        
+
         # Reset
-        else: 
+        else:
             self.step == 0
 
         self.cmd_vel_pub.publish(twist)
