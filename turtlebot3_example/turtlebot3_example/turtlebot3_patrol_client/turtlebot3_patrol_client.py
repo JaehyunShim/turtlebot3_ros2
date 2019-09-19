@@ -14,40 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
-
-import os
-import select
-import sys
-import termios
-import tty
+# Authors: Ryan Shim
 
 import rclpy
-from rclpy.qos import QoSProfile
-
-import actionlib
-import turtlebot3_example.msg
+from rclpy.action import ActionClient
+from rclpy.node import Node
 import sys
+import termios
+
+from action_msgs.msg import GoalStatus
+from turtlebot3_msgs.action import Patrol
 
 terminal_msg = """
-TurtleBot3 Patrol 
+TurtleBot3 Circle Patrol
 ------------------------------------------------------
 In the absolute coordinate system
 
-x: goal position x (unit: m)
-y: goal position y (unit: m)
-theta: goal orientation (range: -180 ~ 180, unit: deg)
+radius: circle radius (unit: m)
+speed: driving speed (unit: m/s)
 ------------------------------------------------------
-
------------------------
-shape: s - square
-       t - triangle
-       c - circle
-
-area: length of side (m) for square, triangle
-      radius (m) for circle
-
-count: patrol count
 """
 
 
@@ -59,68 +44,72 @@ class Turtlebot3PatrolClient(Node):
         """************************************************************
         ** Initialise variables
         ************************************************************"""
-        self.shape = ''
-        self.size = 0.0
-        self.count = 0
+        self.radius = 0.0  # unit: m
+        self.speed = 0.0  # unit: m/s
 
         """************************************************************
-        ** Initialise ROS subscribers and clients
+        ** Initialise ROS clients
         ************************************************************"""
         # Initialise clients
-        client = actionlib.SimpleActionClient('turtlebot3', turtlebot3_example.msg.Turtlebot3Action)
-
-        """************************************************************
-        ** Initialise timers
-        ************************************************************"""
-        self.get_key_timer = self.create_timer(0.010, self.get_key_callback)  # unit: s
+        self.action_client = ActionClient(self, Patrol, 'patrol')
 
         self.get_logger().info("Turtlebot3 patrol node has been initialised.")
+
+        # Get keyboard input and send goal
+        self.get_key()
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def get_key_callback(self):
+    def get_key(self):
         print(terminal_msg)
         settings = termios.tcgetattr(sys.stdin)
-        input_x = input("Input x: ")
-        input_y = input("Input y: ")
-        input_theta = input("Input theta: ")
-        while float(input_theta) > 180 or float(input_theta) < -180:
-            self.get_logger().info("Enter a value for theta between -180 and 180")
-            input_theta = input("Input theta: ")
+        input_radius = input("Input radius: ")
+        input_speed = input("Input speed: ")
 
-        self.step = 1
-        self.goal_pose_x = float(input_x)
-        self.goal_pose_y = float(input_y)
-        self.goal_pose_theta = numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
+        self.radius = float(input_radius)
+        self.speed = float(input_speed)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
+        self.send_goal()
 
-    # def get_key_callback(self):
-    #     print (terminal_msg)
-    #     settings = termios.tcgetattr(sys.stdin)
-    #     input_shape = input("Input shape: ")
-    #     input_size = input("Input size: ")
-    #     input_count = input("Input count: ")
+    def send_goal(self):
+        self.get_logger().info('Waiting for action server...')
+        self.action_client.wait_for_server()
 
-    #     if str(input_shape) == 's':
-    #         mode = 1
-    #     elif str(input_shape) == 't':
-    #         mode = 2
-    #     elif str(input_shape) == 'c':
-    #         mode = 3
-    #     else:
-    #         print("Pressed the Wrong Button!")
+        goal_msg = Patrol.Goal()
+        goal_msg.raidus = self.radius
+        goal_msg.speed = self.speed
 
-    #     self.shape = str(input_shape)
-    #     self.size = float(input_size)
-    #     self.count = int(input_count)
-        
-    #     client.wait_for_server()
-    #     goal = turtlebot3_example.msg.Turtlebot3Goal()
-    #     goal(1) = self.shape
-    #     goal(2) = self.size
-    #     goal(3) = self.count
-    #     client.send_goal(goal)
-    #     print("send to goal")
-    #     client.wait_for_result()
-    #     print(client.get_result())
+        self.get_logger().info('Sending goal request...')
+
+        self._send_goal_future = self.action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self.feedback_callback)
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.get_logger().info('Goal rejected :(')
+            return
+
+        self.get_logger().info('Goal accepted :)')
+
+        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+    def feedback_callback(self, feedback):
+        self.get_logger().info(
+            'Time left until the robot stops: {0}'.format(feedback.feedback.sequence))
+
+    def get_result_callback(self, future):
+        result = future.result().result
+        status = future.result().status
+        if status == GoalStatus.STATUS_SUCCEEDED:
+            self.get_logger().info('Goal succeeded! Result: {0}'.format(result.sequence))
+        else:
+            self.get_logger().info('Goal failed with status: {0}'.format(status))
+
+        # Shutdown after receiving a result
+        rclpy.shutdown()

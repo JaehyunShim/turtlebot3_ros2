@@ -81,7 +81,7 @@ class Turtlebot3InteractiveMarker():
         server.insert(interactive_marker, processFeedback)
         server.applyChanges()
 
-    """********************************************************************************
+    """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def processFeedback(feedback):

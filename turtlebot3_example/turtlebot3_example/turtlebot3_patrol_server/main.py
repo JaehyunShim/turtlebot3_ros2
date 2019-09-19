@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
 import rclpy
-from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_patrol_server import Turtlebot3PatrolServer
+from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_patrol_server \
+    import Turtlebot3PatrolServer
 
 
 def main(args=None):

@@ -14,20 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim 
+# Authors: Ryan Shim
 
-import actionlib
 import math
-import os
-import rclpy
-from rcl_interfaces.msg import ParameterDescriptor
+from rclpy.action import ActionServer
+from rclpy.action import CancelResponse
+from rclpy.action import GoalResponse
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.node import Node
+from rclpy.qos import QoSProfile
+from rclpy.time import Time
+import time
+from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_path \
+    import Turtlebot3Path
+
 from geometry_msgs.msg import Twist
-from geometry_msgs.msg import Quaternion
-from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState
-from turtlebot3_msgs.msg import SensorState
 from turtlebot3_msgs.action import Patrol
-from time import sleep
 
 
 class Turtlebot3PatrolServer(Node):
@@ -38,75 +40,87 @@ class Turtlebot3PatrolServer(Node):
         """************************************************************
         ** Initialise variables
         ************************************************************"""
-        self.odom = Odometry()
-        self.step = 0
-        self.last_pose_x = 0
-        self.last_pose_y = 0
-        self.last_pose_theta = 0
-        self.goal_pose_x = 0
-        self.goal_pose_y = 0
-        self.goal_pose_theta = 0
-        self.complete == False
+        self.left_time = 0.0  # unit: s
+        self.start_time = 0.0  # unit: s
 
         """************************************************************
-        ** Initialise ROS subscribers and servers
+        ** Initialise ROS publishers and servers
         ************************************************************"""
-        self.qos = QoSProfile(depth=10)
+        qos = QoSProfile(depth=10)
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
 
-        # Initialise subscribers
-        self.odom_sub = self.create_subscription(
-            Odometry,
-            'odom',
-            self.odom_callback,
-            qos)
-        self.joint_states_sub = rclpy.create_subscription(JointState, 'joint_states', self.joint_state_callback, self.qos)
-
         # Initialise servers
-        self.action_server = actionlib.ActionServer(
+        self.action_server = ActionServer(
             self,
-            Patrol
-            'patrol'
-            execute_callback=self.generate_path_callback,
+            Patrol,
+            'patrol',
+            execute_callback=self.execute_callback,
+            callback_group=ReentrantCallbackGroup(),
             goal_callback=self.goal_callback,
-            cancel_callback=self.cancel_callback)          
-
-        """************************************************************
-        ** Initialise timers
-        ************************************************************"""
-        self.generate_path_timer = self.create_timer(0.010, self.generate_path_callback)  # unit: s
+            cancel_callback=self.cancel_callback)
 
         self.get_logger().info("Turtlebot3 patrol action server has been initialised.")
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def odom_callback(self, odom):
-        self.last_pose_x = msg.pose.pose.position.x
-        self.last_pose_y = msg.pose.pose.position.y
-        # self.last_pose_theta = euler_from_quaternion(msg.pose.pose.orientation)
-        self.last_pose_theta = 0
+    def destroy(self):
+        self._action_server.destroy()
+        super().destroy_node()
 
     def goal_callback(self, goal_request):
         """Accepts or rejects a client request to begin an action."""
         # This server allows multiple goals in parallel
-        self.get_logger().info("Received goal request")
+        self.get_logger().info('Received goal request')
         return GoalResponse.ACCEPT
 
     def cancel_callback(self, goal_handle):
         """Accepts or rejects a client request to cancel an action."""
-        self.get_logger().info("Received cancel request")
+        self.get_logger().info('Received cancel request')
         return CancelResponse.ACCEPT
 
-    async def generate_path_callback(self, goal_handle):
+    async def execute_callback(self, goal_handle):
+        """Executes a goal."""
+        self.get_logger().info('Executing goal...')
+
+        # Start executing the action
         twist = Twist()
         feedback_msg = Patrol.Feedback()
-        goal_pose_x = Patrol.Goal[0]
-        goal_pose_y = Patrol.Goal[1]
-
-        velocity = 0.5  # unit: m/s
-        twist = Turtlebot3Path.drive_circle(radius, velocity)
+        feedback_msg.left_time = self.left_time
+        radius = Patrol.radius  # unit: m
+        velocity = Patrol.velocity  # unit: m/s
+        driving_time = 2 * math.pi * radius / velocity
 
         self.cmd_vel_pub.publish(twist)
+
+        self.start_time = Time.nanoseconds
+        # for i in range(1, goal_handle.request.order):
+        while (driving_time - self.start_time > driving_time):
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                self.get_logger().info('Goal canceled')
+                return Patrol.Result()
+
+            curr_time = Time.nanoseconds
+            twist = Turtlebot3Path.drive_circle(radius, velocity)
+            feedback_msg.left_time = driving_time - curr_time
+
+            self.get_logger().info('Publishing feedback: {0}'.format(feedback_msg.left_time))
+
+            # Publish the feedback
+            goal_handle.publish_feedback(feedback_msg)
+
+            # Sleep for demonstration purposes
+            time.sleep(0.01)  # unit: s
+
+        goal_handle.succeed()
+
+        # Populate result message
+        result = Patrol.Result()
+        result.success = True
+
+        self.get_logger().info('Returning result: {0}'.format(result.success))
+
+        return result
