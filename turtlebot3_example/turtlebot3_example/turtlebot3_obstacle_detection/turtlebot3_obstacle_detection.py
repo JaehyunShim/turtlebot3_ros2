@@ -17,11 +17,11 @@
 # Authors: Ryan Shim
 
 from geometry_msgs.msg import Twist
+import numpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-import numpy
 
 
 class Turtlebot3ObstacleDetection(Node):

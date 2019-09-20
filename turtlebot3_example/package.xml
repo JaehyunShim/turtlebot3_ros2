@@ -4,7 +4,7 @@
   <name>turtlebot3_example</name>
   <version>1.2.1</version>
   <description>
-    This package provides four TurtleBot3 basic examples using interactive marker, object detection, position control and patrol.
+    This package provides four basic examples for TurtleBot3 (i.e., interactive marker, object detection, patrol and position control).
   </description>
   <author email="jhshim@robotis.com">Ryan Shim</author>
   <author email="kkjong@robotis.com">Gilbert</author>

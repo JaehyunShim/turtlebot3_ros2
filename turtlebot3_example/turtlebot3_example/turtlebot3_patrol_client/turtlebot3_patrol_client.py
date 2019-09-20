@@ -28,8 +28,6 @@ from turtlebot3_msgs.action import Patrol
 terminal_msg = """
 TurtleBot3 Circle Patrol
 ------------------------------------------------------
-In the absolute coordinate system
-
 radius: circle radius (unit: m)
 speed: driving speed (unit: m/s)
 ------------------------------------------------------
@@ -77,7 +75,7 @@ class Turtlebot3PatrolClient(Node):
         self.action_client.wait_for_server()
 
         goal_msg = Patrol.Goal()
-        goal_msg.raidus = self.radius
+        goal_msg.radius = self.radius
         goal_msg.speed = self.speed
 
         self.get_logger().info('Sending goal request...')
@@ -101,13 +99,13 @@ class Turtlebot3PatrolClient(Node):
 
     def feedback_callback(self, feedback):
         self.get_logger().info(
-            'Time left until the robot stops: {0}'.format(feedback.feedback.sequence))
+            'Time left until the robot stops: {0}'.format(feedback.feedback.left_time))
 
     def get_result_callback(self, future):
         result = future.result().result
         status = future.result().status
         if status == GoalStatus.STATUS_SUCCEEDED:
-            self.get_logger().info('Goal succeeded! Result: {0}'.format(result.sequence))
+            self.get_logger().info('Goal succeeded! Result: {0}'.format(result.success))
         else:
             self.get_logger().info('Goal failed with status: {0}'.format(status))
 

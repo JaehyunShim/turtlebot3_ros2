@@ -14,23 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert, Ryan Shim 
+# Authors: Gilbert, Ryan Shim
 
-import os
-import select
-import sys
-import termios
-import tty
-
-import rclpy
-from rclpy.qos import QoSProfile
-
-from geometry_msgs.msg import Twist, Pose
-from interactive_markers.interactive_marker_server import *
-from visualization_msgs.msg import *
-import tf
-from tf.transformations import euler_from_quaternion
 import copy
+from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from rclpy.qos import QoSProfile
+from tf.transformations import euler_from_quaternion
+
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Twist
+from visualization_msgs.msg import InteractiveMarker
+from visualization_msgs.msg import InteractiveMarkerControl
 
 
 class Turtlebot3InteractiveMarker():
@@ -38,20 +32,24 @@ class Turtlebot3InteractiveMarker():
         super().__init__('turtlebot3_interactive_marker')
 
         """************************************************************
-        ** Initialise variables
+        ** Initialise ROS publishers and servers
         ************************************************************"""
-
-        """************************************************************
-        ** Initialise ROS publishers and subscribers
-        ************************************************************"""
-
-        """************************************************************
-        ** Initialise timers
-        ************************************************************"""
-        #
-        server = InteractiveMarkerServer("turtlebot3_interactive_marker_server")
         qos = QoSProfile(depth=10)
-        vel_pub = rospy.Publisher("cmd_vel", Twist, qos)
+
+        # Initialise publishers
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
+
+        # Initialise servers
+        self.init_server
+
+    """*******************************************************************************
+    ** Callback functions and relevant functions
+    *******************************************************************************"""
+    def init_server(self):
+        self.interactive_marker_server = InteractiveMarkerServer(
+            "turtlebot3_interactive_marker_server")
+
+        #
         interactive_marker = InteractiveMarker()
         interactive_marker.header.frame_id = "base_link"
         interactive_marker.name = "turtlebot3_marker"
@@ -63,7 +61,7 @@ class Turtlebot3InteractiveMarker():
         interactive_marker_control.orientation.x = 1
         interactive_marker_control.orientation.y = 0
         interactive_marker_control.orientation.z = 0
-        interactive_marker_control.name = "move_x"
+        interactive_marker_control.name = "translation_x"
         interactive_marker_control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         interactive_marker_control.always_visible = True
         interactive_marker.controls.append(copy.deepcopy(interactive_marker_control))
@@ -73,25 +71,26 @@ class Turtlebot3InteractiveMarker():
         interactive_marker_control.orientation.x = 0
         interactive_marker_control.orientation.y = 1
         interactive_marker_control.orientation.z = 0
-        interactive_marker_control.name = "rotate_z"
+        interactive_marker_control.name = "rotation_z"
         interactive_marker_control.interaction_mode = InteractiveMarkerControl.MOVE_ROTATE
         interactive_marker.controls.append(copy.deepcopy(interactive_marker_control))
 
         #
-        server.insert(interactive_marker, processFeedback)
-        server.applyChanges()
+        self.interactive_marker_server.insert(interactive_marker, self.processFeedback)
+        self.interactive_marker_server.applyChanges()
 
-    """*******************************************************************************
-    ** Callback functions and relevant functions
-    *******************************************************************************"""
-    def processFeedback(feedback):
-        _,_,yaw = euler_from_quaternion((feedback.pose.orientation.x, feedback.pose.orientation.y, feedback.pose.orientation.z, feedback.pose.orientation.w))
+    def processFeedback(self, feedback):
+        _, _, yaw = euler_from_quaternion(
+            feedback.pose.orientation.x,
+            feedback.pose.orientation.y,
+            feedback.pose.orientation.z,
+            feedback.pose.orientation.w)
 
         twist = Twist()
-        twist.angular.z = 2.2 * yaw
         twist.linear.x = 1.0 * feedback.pose.position.x
+        twist.angular.z = 2.2 * yaw
 
-        vel_pub.publish(twist)
+        self.cmd_vel_pub.publish(twist)
 
-        server.setPose("turtlebot3_interactive_marker", Pose())
-        server.applyChanges()
+        self.interactive_marker_server.setPose("turtlebot3_interactive_marker", Pose())
+        self.interactive_marker_server.applyChanges()

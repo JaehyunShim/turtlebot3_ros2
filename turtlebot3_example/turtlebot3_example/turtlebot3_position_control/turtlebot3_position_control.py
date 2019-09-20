@@ -16,22 +16,22 @@
 #
 # Authors: Ryan Shim
 
-import sys
-# import tf2
-import termios
-import numpy
 import math
-from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
+import numpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
+import sys
+import termios
+# import tf2
 from turtlebot3_example.turtlebot3_position_control.turtlebot3_path import Turtlebot3Path
 
-terminal_msg = """
-Turtlebot3 Position Control 
-------------------------------------------------------
-In the relative coordinate system
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 
+terminal_msg = """
+Turtlebot3 Position Control
+------------------------------------------------------
+From the current pose,
 x: goal position x (unit: m)
 y: goal position y (unit: m)
 theta: goal orientation (range: -180 ~ 180, unit: deg)
@@ -93,10 +93,10 @@ class Turtlebot3PositionControl(Node):
             input_theta = input("Input theta: ")
 
         self.step = 1
-        self.goal_pose_x = self.last_pose_x + float(input_x) 
+        self.goal_pose_x = self.last_pose_x + float(input_x)
         self.goal_pose_y = self.last_pose_y + float(input_y)
-        self.goal_pose_theta = 
-            self.last_pose_theta + numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
+        self.goal_pose_theta = self.last_pose_theta
+        + numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
 
     def odom_callback(self, msg):

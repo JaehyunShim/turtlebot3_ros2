@@ -87,33 +87,36 @@ class Turtlebot3PatrolServer(Node):
 
         # Start executing the action
         twist = Twist()
+        goal_msg = Patrol.Goal()
+        radius = goal_msg.radius  # unit: m
+        speed = goal_msg.speed  # unit: m/s
+
         feedback_msg = Patrol.Feedback()
-        feedback_msg.left_time = self.left_time
-        radius = Patrol.radius  # unit: m
-        velocity = Patrol.velocity  # unit: m/s
-        driving_time = 2 * math.pi * radius / velocity
+        total_driving_time = 2 * math.pi * radius
+        feedback_msg.left_time = total_driving_time
 
         self.cmd_vel_pub.publish(twist)
 
         self.start_time = Time.nanoseconds
         # for i in range(1, goal_handle.request.order):
-        while (driving_time - self.start_time > driving_time):
+        while (feedback_msg.left_time > 0):
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
                 self.get_logger().info('Goal canceled')
                 return Patrol.Result()
 
             curr_time = Time.nanoseconds
-            twist = Turtlebot3Path.drive_circle(radius, velocity)
-            feedback_msg.left_time = driving_time - curr_time
+            twist = Turtlebot3Path.drive_circle(radius, speed)
+            feedback_msg.left_time = total_driving_time - curr_time
 
-            self.get_logger().info('Publishing feedback: {0}'.format(feedback_msg.left_time))
+            self.get_logger().info(
+                'Time left until the robot stops: {0}'.format(feedback_msg.left_time))
 
             # Publish the feedback
             goal_handle.publish_feedback(feedback_msg)
 
             # Sleep for demonstration purposes
-            time.sleep(0.01)  # unit: s
+            time.sleep(0.010)  # unit: s
 
         goal_handle.succeed()
 
