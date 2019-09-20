@@ -22,8 +22,6 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile
 import sys
 import termios
-# import tf2
-import time
 from turtlebot3_example.turtlebot3_position_control.turtlebot3_path import Turtlebot3Path
 
 from geometry_msgs.msg import Twist
@@ -55,10 +53,10 @@ class Turtlebot3PositionControl(Node):
         self.goal_pose_x = 0.0
         self.goal_pose_y = 0.0
         self.goal_pose_theta = 0.0
-        self.path_step = 1
+        self.step = 1
         self.get_key_state = False
         self.init_odom_state = False  # To get the initial pose at the beginning
- 
+
         """************************************************************
         ** Initialise ROS publishers and subscribers
         ************************************************************"""
@@ -89,7 +87,7 @@ class Turtlebot3PositionControl(Node):
         self.last_pose_y = msg.pose.pose.position.y
         _, _, self.last_pose_theta = self.euler_from_quaternion(msg.pose.pose.orientation)
 
-        self.init_odom_state = True  
+        self.init_odom_state = True
 
     def update_callback(self):
         if self.init_odom_state is True:
@@ -107,40 +105,41 @@ class Turtlebot3PositionControl(Node):
 
         else:
             # Step 1: Turn
-            if self.path_step == 1:
+            if self.step == 1:
                 path_theta = math.atan2(
                     self.goal_pose_y-self.last_pose_y,
                     self.goal_pose_x-self.last_pose_x)
                 angle = path_theta - self.last_pose_theta
                 angular_velocity = 0.1  # unit: rad/s
 
-                twist, self.path_step = Turtlebot3Path.turn(angle, angular_velocity, self.path_step)
+                twist, self.step = Turtlebot3Path.turn(angle, angular_velocity, self.step)
 
             # Step 2: Go Straight
-            elif self.path_step == 2:
+            elif self.step == 2:
                 distance = math.sqrt(
-                    (self.goal_pose_x-self.last_pose_x)**2 + (self.goal_pose_y-self.last_pose_y)**2)
+                    (self.goal_pose_x-self.last_pose_x)**2
+                    + (self.goal_pose_y-self.last_pose_y)**2)
                 linear_velocity = 0.1  # unit: m/s
 
-                twist, self.path_step = Turtlebot3Path.go_straight(distance, linear_velocity, self.path_step)
+                twist, self.step = Turtlebot3Path.go_straight(distance, linear_velocity, self.step)
 
             # Step 3: Turn
-            elif self.path_step == 3:
+            elif self.step == 3:
                 angle = self.goal_pose_theta - self.last_pose_theta
                 angular_velocity = 0.1  # unit: rad/s
 
-                twist, self.path_step = Turtlebot3Path.turn(angle, angular_velocity, self.path_step)
+                twist, self.step = Turtlebot3Path.turn(angle, angular_velocity, self.step)
 
             # Reset
-            elif self.path_step == 4:
-                self.path_step = 1
+            elif self.step == 4:
+                self.step = 1
                 self.get_key_state = False
 
             self.cmd_vel_pub.publish(twist)
 
     def get_key(self):
-        # Print terminal message and get inputs 
-        print(terminal_msg)        
+        # Print terminal message and get inputs
+        print(terminal_msg)
         input_x = float(input("Input x: "))
         input_y = float(input("Input y: "))
         input_theta = float(input("Input theta: "))
@@ -149,7 +148,6 @@ class Turtlebot3PositionControl(Node):
             input_theta = input("Input theta: ")
         input_theta = numpy.deg2rad(input_theta)  # Convert [deg] to [rad]
 
-        # Change terminal settings
         settings = termios.tcgetattr(sys.stdin)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
 
@@ -170,13 +168,13 @@ class Turtlebot3PositionControl(Node):
 
         sinr_cosp = 2 * (w*x + y*z)
         cosr_cosp = 1 - 2*(x*x + y*y)
-        roll = numpy.arctan2(sinr_cosp,cosr_cosp)
+        roll = numpy.arctan2(sinr_cosp, cosr_cosp)
 
         sinp = 2 * (w*y - z*x)
         pitch = numpy.arcsin(sinp)
 
         siny_cosp = 2 * (w*z + x*y)
         cosy_cosp = 1 - 2 * (y*y + z*z)
-        yaw = numpy.arctan2(siny_cosp,cosy_cosp)
+        yaw = numpy.arctan2(siny_cosp, cosy_cosp)
 
         return roll, pitch, yaw

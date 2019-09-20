@@ -29,7 +29,6 @@ terminal_msg = """
 TurtleBot3 Circle Patrol
 ------------------------------------------------------
 radius: circle radius (unit: m)
-speed: driving speed (unit: m/s)
 ------------------------------------------------------
 """
 
@@ -43,7 +42,6 @@ class Turtlebot3PatrolClient(Node):
         ** Initialise variables
         ************************************************************"""
         self.radius = 0.0  # unit: m
-        self.speed = 0.0  # unit: m/s
 
         """************************************************************
         ** Initialise ROS clients
@@ -63,10 +61,8 @@ class Turtlebot3PatrolClient(Node):
         print(terminal_msg)
         settings = termios.tcgetattr(sys.stdin)
         input_radius = input("Input radius: ")
-        input_speed = input("Input speed: ")
 
         self.radius = float(input_radius)
-        self.speed = float(input_speed)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
         self.send_goal()
 
@@ -76,7 +72,6 @@ class Turtlebot3PatrolClient(Node):
 
         goal_msg = Patrol.Goal()
         goal_msg.radius = self.radius
-        goal_msg.speed = self.speed
 
         self.get_logger().info('Sending goal request...')
 

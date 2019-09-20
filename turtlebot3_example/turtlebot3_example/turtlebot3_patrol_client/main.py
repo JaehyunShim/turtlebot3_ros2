@@ -26,9 +26,6 @@ def main(args=None):
     turtlebot3_patrol_client = Turtlebot3PatrolClient()
     rclpy.spin(turtlebot3_patrol_client)
 
-    turtlebot3_patrol_client.destroy_node()
-    rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()

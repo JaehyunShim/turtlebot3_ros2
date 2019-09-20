@@ -76,7 +76,7 @@ class Turtlebot3InteractiveMarker():
         self.interactive_marker_server.applyChanges()
 
     def processFeedback(self, feedback):
-        _, _, yaw = euler_from_quaternion(feedback.pose.orientation)
+        _, _, yaw = self.euler_from_quaternion(feedback.pose.orientation)
 
         twist = Twist()
         twist.linear.x = 1.0 * feedback.pose.position.x
@@ -87,3 +87,28 @@ class Turtlebot3InteractiveMarker():
         self.interactive_marker_server.setPose("turtlebot3_interactive_marker", Pose())
         self.interactive_marker_server.applyChanges()
 
+    """*******************************************************************************
+    ** Below should be replaced when porting for ROS 2 Python tf_conversions is done.
+    *******************************************************************************"""
+    def euler_from_quaternion(self, quat):
+        """
+        Converts quaternion (w in last place) to euler roll, pitch, yaw
+        quat = [x, y, z, w]
+        """
+        x = quat.x
+        y = quat.y
+        z = quat.z
+        w = quat.w
+
+        sinr_cosp = 2 * (w*x + y*z)
+        cosr_cosp = 1 - 2*(x*x + y*y)
+        roll = numpy.arctan2(sinr_cosp, cosr_cosp)
+
+        sinp = 2 * (w*y - z*x)
+        pitch = numpy.arcsin(sinp)
+
+        siny_cosp = 2 * (w*z + x*y)
+        cosy_cosp = 1 - 2 * (y*y + z*z)
+        yaw = numpy.arctan2(siny_cosp, cosy_cosp)
+
+        return roll, pitch, yaw

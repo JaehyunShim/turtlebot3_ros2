@@ -26,7 +26,7 @@ def main(args=None):
     turtlebot3_patrol_server = Turtlebot3PatrolServer()
     rclpy.spin(turtlebot3_patrol_server)
 
-    turtlebot3_patrol_server.destroy_node()
+    turtlebot3_patrol_server.destroy()
     rclpy.shutdown()
 
 

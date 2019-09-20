@@ -21,6 +21,7 @@ from rclpy.action import ActionServer
 from rclpy.action import CancelResponse
 from rclpy.action import GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.time import Time
@@ -40,8 +41,7 @@ class Turtlebot3PatrolServer(Node):
         """************************************************************
         ** Initialise variables
         ************************************************************"""
-        self.left_time = 0.0  # unit: s
-        self.start_time = 0.0  # unit: s
+        self.goal = Patrol.Goal()
 
         """************************************************************
         ** Initialise ROS publishers and servers
@@ -71,59 +71,56 @@ class Turtlebot3PatrolServer(Node):
         super().destroy_node()
 
     def goal_callback(self, goal_request):
-        """Accepts or rejects a client request to begin an action."""
-        # This server allows multiple goals in parallel
-        self.get_logger().info('Received goal request')
+        # Accepts or rejects a client request to begin an action
+        self.get_logger().info('Received goal request :)')
+        self.goal = goal_request
         return GoalResponse.ACCEPT
 
     def cancel_callback(self, goal_handle):
-        """Accepts or rejects a client request to cancel an action."""
-        self.get_logger().info('Received cancel request')
+        #Accepts or rejects a client request to cancel an action
+        self.get_logger().info('Received cancel request :(')
         return CancelResponse.ACCEPT
 
     async def execute_callback(self, goal_handle):
-        """Executes a goal."""
+        #Executes a goal
         self.get_logger().info('Executing goal...')
 
         # Start executing the action
-        twist = Twist()
-        goal_msg = Patrol.Goal()
-        radius = goal_msg.radius  # unit: m
-        speed = goal_msg.speed  # unit: m/s
+        radius = self.goal.radius  # unit: m
+        speed = 0.5  # unit: m/s
 
         feedback_msg = Patrol.Feedback()
-        total_driving_time = 2 * math.pi * radius
+        total_driving_time = 2 * math.pi * radius / speed
         feedback_msg.left_time = total_driving_time
+        last_time = self.get_clock().now()
 
-        self.cmd_vel_pub.publish(twist)
-
-        self.start_time = Time.nanoseconds
-        # for i in range(1, goal_handle.request.order):
         while (feedback_msg.left_time > 0):
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
                 self.get_logger().info('Goal canceled')
                 return Patrol.Result()
 
-            curr_time = Time.nanoseconds
-            twist = Turtlebot3Path.drive_circle(radius, speed)
-            feedback_msg.left_time = total_driving_time - curr_time
+            curr_time = self.get_clock().now()
+            duration = Duration()
+            duration = (curr_time - last_time).nanoseconds / 1e9  # unit: s
 
+            feedback_msg.left_time = total_driving_time - duration
             self.get_logger().info(
                 'Time left until the robot stops: {0}'.format(feedback_msg.left_time))
-
-            # Publish the feedback
             goal_handle.publish_feedback(feedback_msg)
 
-            # Sleep for demonstration purposes
+            # Give vel_cmd to Turtlebot3
+            twist = Twist()
+            twist = Turtlebot3Path.drive_circle(radius, speed)
+            self.cmd_vel_pub.publish(twist)
+
+            # Process rate
             time.sleep(0.010)  # unit: s
 
+        # Succeeded
         goal_handle.succeed()
-
-        # Populate result message
         result = Patrol.Result()
         result.success = True
-
         self.get_logger().info('Returning result: {0}'.format(result.success))
 
         return result
