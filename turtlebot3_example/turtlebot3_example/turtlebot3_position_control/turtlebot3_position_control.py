@@ -75,35 +75,35 @@ class Turtlebot3PositionControl(Node):
         ** Initialise timers
         ************************************************************"""
         self.generate_path_timer = self.create_timer(0.010, self.generate_path_callback)  # unit: s
-        self.get_key_timer = self.create_timer(0.010, self.get_key_callback)  # unit: s
 
         self.get_logger().info("Turtlebot3 position control node has been initialised.")
+        self.get_key()
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def get_key_callback(self):
+    def get_key(self):
         print(terminal_msg)
         settings = termios.tcgetattr(sys.stdin)
-        input_x = input("Input x: ")
-        input_y = input("Input y: ")
-        input_theta = input("Input theta: ")
-        while float(input_theta) > 180 or float(input_theta) < -180:
+        input_x = float(input("Input x: "))
+        input_y = float(input("Input y: "))
+        input_theta = float(input("Input theta: "))
+        while input_theta > 180 or input_theta < -180:
             self.get_logger().info("Enter a value for theta between -180 and 180")
             input_theta = input("Input theta: ")
 
-        self.step = 1
-        self.goal_pose_x = self.last_pose_x + float(input_x)
-        self.goal_pose_y = self.last_pose_y + float(input_y)
-        self.goal_pose_theta = self.last_pose_theta
-        + numpy.deg2rad(float(input_theta))  # Convert [deg] to [rad]
+        self.goal_pose_x = self.last_pose_x + input_x
+        self.goal_pose_y = self.last_pose_y + input_y
+        input_theta = numpy.deg2rad(input_theta)  # Convert [deg] to [rad]
+        self.goal_pose_theta = self.last_pose_theta + input_theta
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
+
+        self.step = 1  # Start generating path  
 
     def odom_callback(self, msg):
         self.last_pose_x = msg.pose.pose.position.x
         self.last_pose_y = msg.pose.pose.position.y
-        # self.last_pose_theta = euler_from_quaternion(msg.pose.pose.orientation)
-        self.last_pose_theta = 0
+        _, _, self.last_pose_theta = self.euler_from_quaternion(msg.pose.pose.orientation)
 
     def generate_path_callback(self):
         twist = Twist()
@@ -114,7 +114,7 @@ class Turtlebot3PositionControl(Node):
                 self.goal_pose_y-self.last_pose_y,
                 self.goal_pose_x-self.last_pose_x)
             angle = path_theta - self.last_pose_theta
-            angular_velocity = 0.5  # unit: rad/s
+            angular_velocity = 0.1  # unit: rad/s
 
             twist, self.step = Turtlebot3Path.turn(angle, angular_velocity, self.step)
 
@@ -122,19 +122,45 @@ class Turtlebot3PositionControl(Node):
         elif self.step == 2:
             distance = math.sqrt(
                 (self.goal_pose_x-self.last_pose_x)**2 + (self.goal_pose_y-self.last_pose_y)**2)
-            linear_velocity = 0.5  # unit: m/s
+            linear_velocity = 0.1  # unit: m/s
 
             twist, self.step = Turtlebot3Path.go_straight(distance, linear_velocity, self.step)
 
         # Step 3: Turn
         elif self.step == 3:
             angle = self.goal_pose_theta - self.last_pose_theta
-            angular_velocity = 0.5  # unit: rad/s
+            angular_velocity = 0.1  # unit: rad/s
 
             twist, self.step = Turtlebot3Path.turn(angle, angular_velocity, self.step)
 
         # Reset
-        else:
-            self.step == 0
+        elif self.step == 4:
+            self.get_key()
 
         self.cmd_vel_pub.publish(twist)
+
+    """*******************************************************************************
+    ** Below should be replaced when porting for ROS 2 Python tf_conversions is done.
+    *******************************************************************************"""
+    def euler_from_quaternion(self, quat):
+        """
+        Converts quaternion (w in last place) to euler roll, pitch, yaw
+        quat = [x, y, z, w]
+        """
+        x = quat.x
+        y = quat.y
+        z = quat.z
+        w = quat.w
+
+        sinr_cosp = 2 * (w*x + y*z)
+        cosr_cosp = 1 - 2*(x*x + y*y)
+        roll = numpy.arctan2(sinr_cosp,cosr_cosp)
+
+        sinp = 2 * (w*y - z*x)
+        pitch = numpy.arcsin(sinp)
+
+        siny_cosp = 2 * (w*z + x*y)
+        cosy_cosp = 1 - 2 * (y*y + z*z)
+        yaw = numpy.arctan2(siny_cosp,cosy_cosp)
+
+        return [roll, pitch, yaw]

@@ -17,7 +17,7 @@
 # Authors: Gilbert, Ryan Shim
 
 import copy
-from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from interactive_markers import InteractiveMarkerServer
 from rclpy.qos import QoSProfile
 from tf.transformations import euler_from_quaternion
 
@@ -42,6 +42,8 @@ class Turtlebot3InteractiveMarker():
         # Initialise servers
         self.init_server
 
+        self.get_logger().info("Turtlebot3 interactive marker node has been initialised.")
+
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
@@ -54,37 +56,27 @@ class Turtlebot3InteractiveMarker():
         interactive_marker.header.frame_id = "base_link"
         interactive_marker.name = "turtlebot3_marker"
 
-        #
+        # For translation in axis x
         interactive_marker_control = InteractiveMarkerControl()
         interactive_marker_control.orientation_mode = InteractiveMarkerControl.FIXED
-        interactive_marker_control.orientation.w = 1
-        interactive_marker_control.orientation.x = 1
-        interactive_marker_control.orientation.y = 0
-        interactive_marker_control.orientation.z = 0
+        interactive_marker_control.orientation = (1, 0, 0, 1)
         interactive_marker_control.name = "translation_x"
         interactive_marker_control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         interactive_marker_control.always_visible = True
         interactive_marker.controls.append(copy.deepcopy(interactive_marker_control))
 
-        #
-        interactive_marker_control.orientation.w = 1
-        interactive_marker_control.orientation.x = 0
-        interactive_marker_control.orientation.y = 1
-        interactive_marker_control.orientation.z = 0
+        # For rotation in axis z
+        interactive_marker_control.orientation = (0, 1, 0, 1)
         interactive_marker_control.name = "rotation_z"
         interactive_marker_control.interaction_mode = InteractiveMarkerControl.MOVE_ROTATE
         interactive_marker.controls.append(copy.deepcopy(interactive_marker_control))
 
-        #
+        # Add interactive marker and commit changes
         self.interactive_marker_server.insert(interactive_marker, self.processFeedback)
         self.interactive_marker_server.applyChanges()
 
     def processFeedback(self, feedback):
-        _, _, yaw = euler_from_quaternion(
-            feedback.pose.orientation.x,
-            feedback.pose.orientation.y,
-            feedback.pose.orientation.z,
-            feedback.pose.orientation.w)
+        _, _, yaw = euler_from_quaternion(feedback.pose.orientation)
 
         twist = Twist()
         twist.linear.x = 1.0 * feedback.pose.position.x
@@ -94,3 +86,4 @@ class Turtlebot3InteractiveMarker():
 
         self.interactive_marker_server.setPose("turtlebot3_interactive_marker", Pose())
         self.interactive_marker_server.applyChanges()
+
