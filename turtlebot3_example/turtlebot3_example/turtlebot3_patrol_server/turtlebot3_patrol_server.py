@@ -24,7 +24,6 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
-from rclpy.time import Time
 import time
 from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_path \
     import Turtlebot3Path
@@ -77,12 +76,12 @@ class Turtlebot3PatrolServer(Node):
         return GoalResponse.ACCEPT
 
     def cancel_callback(self, goal_handle):
-        #Accepts or rejects a client request to cancel an action
+        # Accepts or rejects a client request to cancel an action
         self.get_logger().info('Received cancel request :(')
         return CancelResponse.ACCEPT
 
     async def execute_callback(self, goal_handle):
-        #Executes a goal
+        # Executes a goal
         self.get_logger().info('Executing goal...')
 
         # Start executing the action
