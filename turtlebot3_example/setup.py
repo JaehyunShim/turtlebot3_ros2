@@ -8,16 +8,17 @@ package_name = 'turtlebot3_example'
 
 setup(
     name=package_name,
-    version='1.0.0',
+    version='2.0.0',
     packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_interactive_marker.launch.py'))),
-        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_obstacle_detection.launch.py'))),
-        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_patrol.launch.py'))),
-        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_position_control.launch.py'))),
-        ('share/' + package_name + '/rviz', glob.glob(os.path.join('rviz', 'turtlebot3_interactive_marker.rviz'))),
+        # To be added
+        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_interactive_marker.launch.py'))),
+        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_obstacle_detection.launch.py'))),
+        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_patrol.launch.py'))),
+        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_position_control.launch.py'))),
+        # ('share/' + package_name + '/rviz', glob.glob(os.path.join('rviz', 'turtlebot3_interactive_marker.rviz'))),
     ],
     install_requires=['setuptools','launch'],
     zip_safe=True,
@@ -38,7 +39,8 @@ setup(
     license='Apache License, Version 2.0',
     entry_points={
         'console_scripts': [
-            'turtlebot3_interactive_marker = turtlebot3_example.turtlebot3_interactive_marker.main:main',
+            # To be added
+            # 'turtlebot3_interactive_marker = turtlebot3_example.turtlebot3_interactive_marker.main:main', 
             'turtlebot3_obstacle_detection = turtlebot3_example.turtlebot3_obstacle_detection.main:main',
             'turtlebot3_patrol_client = turtlebot3_example.turtlebot3_patrol_client.main:main',
             'turtlebot3_patrol_server = turtlebot3_example.turtlebot3_patrol_server.main:main',
