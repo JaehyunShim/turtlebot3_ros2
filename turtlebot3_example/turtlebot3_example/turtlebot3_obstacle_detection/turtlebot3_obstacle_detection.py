@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim
+# Authors: Ryan Shim, Gilbert
 
 from geometry_msgs.msg import Twist
 import numpy
@@ -78,7 +78,7 @@ class Turtlebot3ObstacleDetection(Node):
     def detect_obstacle_callback(self):
         twist = Twist()
         obstacle_distance = min(self.scan_ranges)
-        safety_distance = 0.2  # unit: m
+        safety_distance = 0.3  # unit: m
 
         if obstacle_distance > safety_distance:
             twist.linear.x = self.linear_velocity

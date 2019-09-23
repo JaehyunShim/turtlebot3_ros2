@@ -14,29 +14,19 @@
 
 # Author: Ryan Shim
 
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.actions import IncludeLaunchDescription
-from launch.actions import LogInfo
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-
-TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
 
 
 def generate_launch_description():
     return LaunchDescription([
         # Node(
-            # package='turtlebot3_teleop',
-            # node_executable='teleop_keyboard',
-            # node_name='teleop_keyboard',
-            # arguments=[{cmd_vel:=cmd_vel_raw}]),
-            # output='screen'
-            # ),
+        #     package='turtlebot3_teleop',
+        #     node_executable='teleop_keyboard',
+        #     node_name='teleop_keyboard',
+        #     arguments=[{cmd_vel:=cmd_vel_raw}]),
+        #     output='screen'
+        #     ),
 
         Node(
             package='turtlebot3_example',
