@@ -4,7 +4,7 @@ import os
 from setuptools import find_packages
 from setuptools import setup
 
-package_name = 'turtlebot3_example'
+package_name = 'turtlebot3_example2'
 
 setup(
     name=package_name,
@@ -38,11 +38,7 @@ setup(
     entry_points={
         'console_scripts': [
             # To be added
-            # 'turtlebot3_interactive_marker = turtlebot3_example.turtlebot3_interactive_marker.main:main', 
-            'turtlebot3_obstacle_detection = turtlebot3_example.turtlebot3_obstacle_detection.main:main',
-            'turtlebot3_patrol_client = turtlebot3_example.turtlebot3_patrol_client.main:main',
-            'turtlebot3_patrol_server = turtlebot3_example.turtlebot3_patrol_server.main:main',
-            'turtlebot3_position_control = turtlebot3_example.turtlebot3_position_control.main:main',
+            # 'turtlebot3_interactive_marker = turtlebot3_example2.turtlebot3_interactive_marker.main:main', 
         ],
     },
 )

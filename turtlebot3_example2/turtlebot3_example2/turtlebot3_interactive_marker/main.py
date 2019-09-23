@@ -17,16 +17,16 @@
 # Authors: Ryan Shim, Gilbert
 
 import rclpy
-from turtlebot3_example.turtlebot3_patrol_server.turtlebot3_patrol_server \
-    import Turtlebot3PatrolServer
+from turtlebot3_example2.turtlebot3_interactive_marker.turtlebot3_interactive_marker \
+    import Turtlebot3InteractiveMarker
 
 
 def main(args=None):
     rclpy.init(args=args)
-    turtlebot3_patrol_server = Turtlebot3PatrolServer()
-    rclpy.spin(turtlebot3_patrol_server)
+    turtlebot3_interactive_marker = Turtlebot3InteractiveMarker()
+    rclpy.spin(turtlebot3_interactive_marker)
 
-    turtlebot3_patrol_server.destroy()
+    turtlebot3_interactive_marker.destroy_node()
     rclpy.shutdown()
 
 
