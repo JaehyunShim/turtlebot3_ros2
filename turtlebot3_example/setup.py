@@ -16,8 +16,6 @@ setup(
         # To be added
         # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_interactive_marker.launch.py'))),
         # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_obstacle_detection.launch.py'))),
-        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_patrol.launch.py'))),
-        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_position_control.launch.py'))),
         # ('share/' + package_name + '/rviz', glob.glob(os.path.join('rviz', 'turtlebot3_interactive_marker.rviz'))),
     ],
     install_requires=['setuptools','launch'],

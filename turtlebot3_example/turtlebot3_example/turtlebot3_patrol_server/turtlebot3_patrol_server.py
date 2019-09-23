@@ -81,10 +81,8 @@ class Turtlebot3PatrolServer(Node):
         return CancelResponse.ACCEPT
 
     async def execute_callback(self, goal_handle):
-        # Executes a goal
         self.get_logger().info('Executing goal...')
 
-        # Start executing the action
         radius = self.goal.radius  # unit: m
         speed = 0.5  # unit: m/s
 
@@ -93,6 +91,7 @@ class Turtlebot3PatrolServer(Node):
         feedback_msg.left_time = total_driving_time
         last_time = self.get_clock().now()
 
+        # Start executing an action
         while (feedback_msg.left_time > 0):
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
@@ -116,7 +115,10 @@ class Turtlebot3PatrolServer(Node):
             # Process rate
             time.sleep(0.010)  # unit: s
 
-        # Succeeded
+        # When the action is completed 
+        twist = Twist()
+        self.cmd_vel_pub.publish(twist)
+
         goal_handle.succeed()
         result = Patrol.Result()
         result.success = True
