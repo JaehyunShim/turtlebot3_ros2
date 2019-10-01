@@ -20,18 +20,17 @@ import rospy
 import sys
 from std_msgs.msg import Float32
 from std_msgs.msg import Float32MultiArray
-from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import QWaitCondition
 from PyQt5.QtCore import QMutex
 from PyQt5.QtCore import pyqtSignal
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore
 
 
-class Thread(QThread):
+class ActionGraph(QThread):
     change_value1 = pyqtSignal(int)
     change_value2 = pyqtSignal(int)
     change_value3 = pyqtSignal(int)
@@ -161,9 +160,22 @@ class Form(QWidget):
         form_lbx.addWidget(self.reward, 3, 0)
         self.setLayout(form_lbx)
 
-if __name__ == "__main__":
-    rospy.init_node('progress')
+"""*******************************************************************************
+** Main
+*******************************************************************************"""
+def main(args=None):
+    rclpy.init('progress')
     app = QApplication(sys.argv)
     form = Form()
     form.show()
     exit(app.exec_())
+
+    # action_graph = ActionGraph()
+    # rclpy.spin(action_graph)
+    
+    # action_graph.destroy()
+    # rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

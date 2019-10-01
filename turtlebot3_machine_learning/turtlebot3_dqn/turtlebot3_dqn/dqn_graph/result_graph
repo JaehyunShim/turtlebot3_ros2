@@ -16,11 +16,9 @@
 #
 # Authors: Gilbert
 
-import rospy
-import pyqtgraph as pg
-import sys
 import pickle
-from std_msgs.msg import Float32
+import rospy
+import sys
 from std_msgs.msg import Float32MultiArray
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -29,9 +27,12 @@ from PyQt5.QtCore import *
 class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
+
+        """************************************************************
+        ** Initialise variables
+        ************************************************************"""
         self.setWindowTitle("Result")
         self.setGeometry(50, 50, 600, 650)
-        self.graph_sub = rospy.Subscriber('result', Float32MultiArray, self.data)
         self.ep = []
         self.data = []
         self.rewards = []
@@ -45,25 +46,36 @@ class Window(QMainWindow):
             self.size_ep = len(self.ep)
         self.plot()
 
-    def data(self, data):
-        self.data.append(data.data[0])
+        """************************************************************
+        ** Initialise ROS subscribers
+        ************************************************************"""
+        qos = QoSProfile(depth=10)
+
+        # Initialise publishers
+        self.result_sub = rclpy.Subscriber(Float32MultiArray, 'result', self.result_callback, qos)
+
+    """*******************************************************************************
+    ** Callback functions and relevant functions
+    *******************************************************************************"""
+    def result_callback(self, msg):
+        self.msg.append(msg.data[0])
         self.ep.append(self.size_ep + self.count)
         self.count += 1
-        self.rewards.append(data.data[1])
+        self.rewards.append(msg.data[1])
 
     def plot(self):
-        self.qValuePlt = pg.PlotWidget(self, title="Average max Q-value")
+        self.qValuePlt = pyqtgraph.PlotWidget(self, title="Average max Q-value")
         self.qValuePlt.move(0, 320)
         self.qValuePlt.resize(600, 300)
-        self.timer1 = pg.QtCore.QTimer()
+        self.timer1 = pyqtgraph.QtCore.QTimer()
         self.timer1.timeout.connect(self.update)
         self.timer1.start(200)
 
-        self.rewardsPlt = pg.PlotWidget(self, title="Total reward")
+        self.rewardsPlt = pyqtgraph.PlotWidget(self, title="Total reward")
         self.rewardsPlt.move(0, 10)
         self.rewardsPlt.resize(600, 300)
 
-        self.timer2 = pg.QtCore.QTimer()
+        self.timer2 = pyqtgraph.QtCore.QTimer()
         self.timer2.timeout.connect(self.update)
         self.timer2.start(100)
 
@@ -88,11 +100,15 @@ class Window(QMainWindow):
         with open("graph.txt", "wb") as f:
             pickle.dump(data, f)
 
+"""*******************************************************************************
+** Main
+*******************************************************************************"""
+def main(args=None):
+    rclpy.init('graph')
+    app = QApplication(sys.argv)
+    GUI = Window()
+    sys.exit(app.exec_())
 
-def run():
-        rospy.init_node('graph')
-        app = QApplication(sys.argv)
-        GUI = Window()
-        sys.exit(app.exec_())
 
-run()
+if __name__ == '__main__':
+    main()

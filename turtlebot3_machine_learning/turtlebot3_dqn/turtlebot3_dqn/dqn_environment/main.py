@@ -16,16 +16,16 @@
 #
 # Authors: Ryan Shim, Gilbert
 
-import rospy
-from turtlebot3_dqn.turtlebot3_moving_obstacle.turtlebot3_moving_obstacle import Turtlebot3MovingObstacle
- # or 2
+import rclpy
+from turtlebot3_dqn.turtlebot3_environment.turtlebot3_environment import TurtleBot3Environment
+
 
 def main(args=None):
     rclpy.init(args=args)
-    turtlebot3_moving_obstacle = Turtlebot3MovingObstacle() # or 2
-    rclpy.spin(turtlebot3_moving_obstacle)
+    turtlebot3_environment = TurtleBot3Environment()
+    rclpy.spin(turtlebot3_environment)
 
-    turtlebot3_dqn.destroy()
+    turtlebot3_environment.destroy()
     rclpy.shutdown()
 
 

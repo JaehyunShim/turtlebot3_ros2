@@ -16,18 +16,15 @@
 #
 # Authors: Ryan Shim, Gilbert
 
-import rclpy
-from turtlebot3_dqn.turtlebot3_dqn.stage_1 import ReinforceAgent
+import numpy
 
 
 class DQNFunctions():
-    
-    def buildModel(self):
+    def build_model(self):
         model = Sequential()
         dropout = 0.2
 
         model.add(Dense(64, input_shape=(self.state_size,), activation='relu', kernel_initializer='lecun_uniform'))
-
         model.add(Dense(64, activation='relu', kernel_initializer='lecun_uniform'))
         model.add(Dropout(dropout))
 
@@ -38,31 +35,31 @@ class DQNFunctions():
 
         return model
 
-    def getQvalue(self, reward, next_target, done):
+    def get_q_value(self, reward, next_target, done):
         if done:
             return reward
         else:
-            return reward + self.discount_factor * np.amax(next_target)
+            return reward + self.discount_factor * numpy.amax(next_target)
 
-    def updateTargetModel(self):
+    def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
-    def getAction(self, state):
-        if np.random.rand() <= self.epsilon:
-            self.q_value = np.zeros(self.action_size)
+    def get_action(self, state):
+        if numpy.random.rand() <= self.epsilon:
+            self.q_value = numpy.zeros(self.action_size)
             return random.randrange(self.action_size)
         else:
             q_value = self.model.predict(state.reshape(1, len(state)))
             self.q_value = q_value
-            return np.argmax(q_value[0])
+            return numpy.argmax(q_value[0])
 
-    def appendMemory(self, state, action, reward, next_state, done):
+    def append_memory(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def trainModel(self, target=False):
+    def train_model(self, target=False):
         mini_batch = random.sample(self.memory, self.batch_size)
-        X_batch = np.empty((0, self.state_size), dtype=np.float64)
-        Y_batch = np.empty((0, self.action_size), dtype=np.float64)
+        X_batch = numpy.empty((0, self.state_size), dtype=numpy.float64)
+        Y_batch = numpy.empty((0, self.action_size), dtype=numpy.float64)
 
         for i in range(self.batch_size):
             states = mini_batch[i][0]
@@ -80,16 +77,16 @@ class DQNFunctions():
             else:
                 next_target = self.model.predict(next_states.reshape(1, len(next_states)))
 
-            next_q_value = self.getQvalue(rewards, next_target, dones)
+            next_q_value = self.get_q_value(rewards, next_target, dones)
 
-            X_batch = np.append(X_batch, np.array([states.copy()]), axis=0)
+            X_batch = numpy.append(X_batch, numpy.array([states.copy()]), axis=0)
             Y_sample = q_value.copy()
 
             Y_sample[0][actions] = next_q_value
-            Y_batch = np.append(Y_batch, np.array([Y_sample[0]]), axis=0)
+            Y_batch = numpy.append(Y_batch, numpy.array([Y_sample[0]]), axis=0)
 
             if dones:
-                X_batch = np.append(X_batch, np.array([next_states.copy()]), axis=0)
-                Y_batch = np.append(Y_batch, np.array([[rewards] * self.action_size]), axis=0)
+                X_batch = numpy.append(X_batch, numpy.array([next_states.copy()]), axis=0)
+                Y_batch = numpy.append(Y_batch, numpy.array([[rewards] * self.action_size]), axis=0)
 
         self.model.fit(X_batch, Y_batch, batch_size=self.batch_size, epochs=1, verbose=0)

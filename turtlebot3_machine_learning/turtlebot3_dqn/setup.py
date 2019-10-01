@@ -38,7 +38,8 @@ setup(
     entry_points={
         'console_scripts': [
             # To be added
-            # 'turtlebot3_interactive_marker = turtlebot3_dqn.turtlebot3_interactive_marker.main:main', 
+            'turtlebot3_moving_obstacle = turtlebot3_dqn.turtlebot3_moving_obstacle.turtlebot3_moving_obstacle:main', 
+            'turtlebot3_moving_obstacle2 = turtlebot3_dqn.turtlebot3_moving_obstacle.turtlebot3_moving_obstacle2:main', 
         ],
     },
 )

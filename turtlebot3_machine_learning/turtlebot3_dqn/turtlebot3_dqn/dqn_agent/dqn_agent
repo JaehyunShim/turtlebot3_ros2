@@ -24,7 +24,6 @@ from keras.layers import Dropout
 from keras.models import Sequential
 from keras.models import load_model
 from keras.optimizers import RMSprop
-import numpy
 import os
 import random
 import rclpy
@@ -39,7 +38,6 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 class ReinforceAgent(Node):
-
     def __init__(self, state_size, action_size):
         super().__init__('turtlebot3_dqn')
 
@@ -67,8 +65,8 @@ class ReinforceAgent(Node):
         self.train_start = 64
         self.memory = collections.deque(maxlen=1000000)
 
-        self.model = self.buildModel()
-        self.target_model = self.buildModel()
+        self.model = self.build_model()
+        self.target_model = self.build_model()
 
         """************************************************************
         ** Initialise ROS publishers and servers
@@ -79,7 +77,7 @@ class ReinforceAgent(Node):
         self.result_pub = self.create_publisher(Float32MultiArray, 'result', qos)
         self.get_action_pub = self.create_publisher(Float32MultiArray, 'get_action', qos)
 
-        self.updateTargetModel()
+        self.update_target_model()
 
         if self.load_model:
             self.model.set_weights(load_model(self.dirPath+str(self.load_episode)+".h5").get_weights())
@@ -100,7 +98,7 @@ class ReinforceAgent(Node):
         state_size = 28  
         action_size = 5
 
-        env = Environment(action_size)
+        env = TurtleBot3Environment(action_size)
 
         agent = ReinforceAgent(state_size, action_size)
         scores, episodes = [], []
@@ -143,7 +141,7 @@ class ReinforceAgent(Node):
                 if done:
                     result.data = [score, np.max(agent.q_value)]
                     result_pub.publish(result)
-                    agent.updateTargetModel()
+                    agent.update_target_model()
                     scores.append(score)
                     episodes.append(e)
                     m, s = divmod(int(time.time() - start_time), 60)
