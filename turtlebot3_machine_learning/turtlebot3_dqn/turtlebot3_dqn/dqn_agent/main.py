@@ -17,15 +17,15 @@
 # Authors: Ryan Shim, Gilbert
 
 import rclpy
-from turtlebot3_dqn.turtlebot3_dqn.turtlebot3_dqn import ReinforceAgent
+from turtlebot3_dqn.turtlebot3_dqn.dqn_agent import DQNAgent
 
 
 def main(args=None):
     rclpy.init(args=args)
-    turtlebot3_dqn = ReinforceAgent()
-    rclpy.spin(turtlebot3_dqn)
+    dqn_agent = DQNAgent()
+    rclpy.spin(dqn_agent)
 
-    turtlebot3_dqn.destroy()
+    dqn_agent.destroy()
     rclpy.shutdown()
 
 

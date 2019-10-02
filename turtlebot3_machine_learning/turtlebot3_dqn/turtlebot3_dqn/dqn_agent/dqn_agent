@@ -16,7 +16,7 @@
 #
 # Authors: Ryan Shim, Gilbert
 
-import collections
+import collections import deque
 import json
 from keras.layers import Activation
 from keras.layers import Dense
@@ -36,9 +36,11 @@ from std_msgs.msg import Float32MultiArray
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
+EPISODES = 3000
 
-class ReinforceAgent(Node):
-    def __init__(self, state_size, action_size):
+
+class DQNAgent(Node):
+    def __init__(self):
         super().__init__('turtlebot3_dqn')
 
         """************************************************************
@@ -48,14 +50,15 @@ class ReinforceAgent(Node):
         self.dirPath = self.dirPath.replace('turtlebot3_dqn/nodes', 'turtlebot3_dqn/save_model/stage_1_')
         # stage1 for 1 stage2 for2, ... stage 4 for 4
         self.result = Float32MultiArray()
-        self.get_action = Float32MultiArray()
 
         self.load_model = False
         self.load_episode = 0
-        self.state_size = state_size
-        self.action_size = action_size
-        self.episode_step = 6000
-        self.target_update = 2000
+
+        # Action size and state size
+        self.action_size = 5
+        self.state_size = 28
+
+        # DQN hyperparameter
         self.discount_factor = 0.99
         self.learning_rate = 0.00025
         self.epsilon = 1.0
@@ -63,20 +66,15 @@ class ReinforceAgent(Node):
         self.epsilon_min = 0.05
         self.batch_size = 64
         self.train_start = 64
-        self.memory = collections.deque(maxlen=1000000)
 
+        # Replay memory
+        self.memory = deque(maxlen=1000000)
+
+        # Build model and target model
         self.model = self.build_model()
         self.target_model = self.build_model()
 
-        """************************************************************
-        ** Initialise ROS publishers and servers
-        ************************************************************"""
-        qos = QoSProfile(depth=10)
-
-        # Initialise publishers
-        self.result_pub = self.create_publisher(Float32MultiArray, 'result', qos)
-        self.get_action_pub = self.create_publisher(Float32MultiArray, 'get_action', qos)
-
+        # Initialise target model
         self.update_target_model()
 
         if self.load_model:
@@ -85,6 +83,18 @@ class ReinforceAgent(Node):
             with open(self.dirPath+str(self.load_episode)+'.json') as outfile:
                 param = json.load(outfile)
                 self.epsilon = param.get('epsilon')
+
+        self.episode_step = 6000
+        self.target_update = 2000
+
+        """************************************************************
+        ** Initialise ROS publishers and servers
+        ************************************************************"""
+        qos = QoSProfile(depth=10)
+
+        # Initialise publishers
+        self.get_action_pub = self.create_publisher(Float32MultiArray, 'get_action', qos)
+        self.result_pub = self.create_publisher(Float32MultiArray, 'result', qos)
 
         """************************************************************
         ** Initialise timers
@@ -95,43 +105,37 @@ class ReinforceAgent(Node):
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def process_callback(self):
-        state_size = 28  
-        action_size = 5
-
-        env = TurtleBot3Environment(action_size)
-
-        agent = ReinforceAgent(state_size, action_size)
         scores, episodes = [], []
         global_step = 0
         start_time = time.time()
 
-        EPISODES = 3000
-
-        for e in range(agent.load_episode + 1, EPISODES):
+        for e in range(self.load_episode + 1, EPISODES):
             done = False
-            state = env.reset()
+            # state = environment.reset()
             score = 0
-            for t in range(agent.episode_step):
-                action = agent.getAction(state)
+            for t in range(self.episode_step):
+                action = self.get_action(state)
 
-                next_state, reward, done = env.step(action)
+                # next_state, reward, done = environment.step(action)
 
-                agent.appendMemory(state, action, reward, next_state, done)
+                self.append_sample(state, action, reward, next_state, done)
 
-                if len(agent.memory) >= agent.train_start:
-                    if global_step <= agent.target_update:
-                        agent.trainModel()
+                if len(self.memory) >= self.train_start:
+                    if global_step <= self.target_update:
+                        self.train_model()
                     else:
-                        agent.trainModel(True)
+                        self.train_model(True)
 
                 score += reward
                 state = next_state
+
+                get_action = Float32MultiArray()
                 get_action.data = [action, score, reward]
                 get_action_pub.publish(get_action)
 
                 if e % 10 == 0:
-                    agent.model.save(agent.dirPath + str(e) + '.h5')
-                    with open(agent.dirPath + str(e) + '.json', 'w') as outfile:
+                    self.model.save(self.dirPath + str(e) + '.h5')
+                    with open(self.dirPath + str(e) + '.json', 'w') as outfile:
                         json.dump(param_dictionary, outfile)
 
                 if t >= 500:
@@ -139,24 +143,92 @@ class ReinforceAgent(Node):
                     done = True
 
                 if done:
-                    result.data = [score, np.max(agent.q_value)]
+                    result.data = [score, np.max(self.q_value)]
                     result_pub.publish(result)
-                    agent.update_target_model()
+                    self.update_target_model()
                     scores.append(score)
                     episodes.append(e)
                     m, s = divmod(int(time.time() - start_time), 60)
                     h, m = divmod(m, 60)
 
-                    rospy.loginfo('Ep: %d score: %.2f memory: %d epsilon: %.2f time: %d:%02d:%02d',
-                                e, score, len(agent.memory), agent.epsilon, h, m, s)
+                    print('Ep: %d, score: %.2f, memory: %d, epsilon: %.2f, time: %d:%02d:%02d',
+                        e, score, len(self.memory), self.epsilon, h, m, s)
                     param_keys = ['epsilon']
-                    param_values = [agent.epsilon]
+                    param_values = [self.epsilon]
                     param_dictionary = dict(zip(param_keys, param_values))
                     break
 
                 global_step += 1
-                if global_step % agent.target_update == 0:
+                if global_step % self.target_update == 0:
                     rospy.loginfo("UPDATE TARGET NETWORK")
 
-            if agent.epsilon > agent.epsilon_min:
-                agent.epsilon *= agent.epsilon_decay
+    def build_model(self):
+        model = Sequential()
+        model.add(Dense(64, input_shape=(self.state_size,), activation='relu', kernel_initializer='lecun_uniform'))
+        model.add(Dense(64, activation='relu', kernel_initializer='lecun_uniform'))
+        model.add(Dropout(0.2))
+        model.add(Dense(self.action_size, kernel_initializer='lecun_uniform'))
+        model.add(Activation('linear'))
+        model.compile(loss='mse', optimizer=RMSprop(lr=self.learning_rate, rho=0.9, epsilon=1e-06))
+        model.summary()
+
+        return model
+
+    def update_target_model(self):
+        self.target_model.set_weights(self.model.get_weights())
+
+    def get_action(self, state):
+        if numpy.random.rand() <= self.epsilon:
+            self.q_value = numpy.zeros(self.action_size)
+            return random.randrange(self.action_size)
+        else:
+            q_value = self.model.predict(state.reshape(1, len(state)))
+            self.q_value = q_value
+            return numpy.argmax(q_value[0])
+
+    def append_sample(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def train_model(self, target=False):
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+        mini_batch = random.sample(self.memory, self.batch_size)
+        X_batch = numpy.empty((0, self.state_size), dtype=numpy.float64)
+        Y_batch = numpy.empty((0, self.action_size), dtype=numpy.float64)
+
+        for i in range(self.batch_size):
+            states = mini_batch[i][0]
+            actions = mini_batch[i][1]
+            rewards = mini_batch[i][2]
+            next_states = mini_batch[i][3]
+            dones = mini_batch[i][4]
+
+            q_value = self.model.predict(states.reshape(1, len(states)))
+            self.q_value = q_value
+
+            if target:
+                next_target = self.target_model.predict(next_states.reshape(1, len(next_states)))
+
+            else:
+                next_target = self.model.predict(next_states.reshape(1, len(next_states)))
+
+            next_q_value = self.get_q_value(rewards, next_target, dones)
+
+            X_batch = numpy.append(X_batch, numpy.array([states.copy()]), axis=0)
+            Y_sample = q_value.copy()
+
+            Y_sample[0][actions] = next_q_value
+            Y_batch = numpy.append(Y_batch, numpy.array([Y_sample[0]]), axis=0)
+
+            if dones:
+                X_batch = numpy.append(X_batch, numpy.array([next_states.copy()]), axis=0)
+                Y_batch = numpy.append(Y_batch, numpy.array([[rewards] * self.action_size]), axis=0)
+
+        self.model.fit(X_batch, Y_batch, batch_size=self.batch_size, epochs=1, verbose=0)
+
+    def get_q_value(self, reward, next_target, done):
+        if done:
+            return reward
+        else:
+            return reward + self.discount_factor * numpy.amax(next_target)

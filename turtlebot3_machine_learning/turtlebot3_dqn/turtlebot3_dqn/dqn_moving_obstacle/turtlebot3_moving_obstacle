@@ -31,13 +31,13 @@ class Turtlebot3MovingObstacle():
         qos = QoSProfile(depth=10)
 
         # Initialise publishers
-        self.model_state_pub = rclpy.create_publisher(
+        self.model_state_pub = self.create_publisher(
             ModelState,
             'gazebo/set_model_state',
             qos)
 
         # Initialise subscribers
-        self.model_state_sub = rclpy.create_subscription(
+        self.model_state_sub = self.create_subscription(
             ModelStates,
             'gazebo/model_states',
             self.model_state_callback,
@@ -46,7 +46,7 @@ class Turtlebot3MovingObstacle():
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def model_state_callback(self):
+    def model_state_callback(self, model):
         obstacle = ModelState()
         for i in range(len(model.name)):
             if model.name[i] == 'obstacle':

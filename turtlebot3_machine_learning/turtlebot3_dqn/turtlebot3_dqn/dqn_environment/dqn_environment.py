@@ -29,7 +29,7 @@ from std_srvs.srv import Empty
 
 
 class TurtleBot3Environment():
-    def __init__(self, action_size):
+    def __init__(self):
         super().__init__('turtlebot3_environment')
 
         """************************************************************
@@ -42,25 +42,40 @@ class TurtleBot3Environment():
         self.goal_pose_y = 0.0
         self.goal_pose_theta = 0.0
         self.angle = 0.0
-        self.action_size = action_size
+        self.action_size = 5
         self.init_goal = True
         self.get_goalbox = False
-        self.reset_proxy = rclpy.ServiceProxy('gazebo/reset_simulation', Empty)
-        self.unpause_proxy = rclpy.ServiceProxy('gazebo/unpause_physics', Empty)
-        self.pause_proxy = rclpy.ServiceProxy('gazebo/pause_physics', Empty)
-        self.respawn_goal = Respawn()
 
         """************************************************************
-        ** Initialise ROS publishers and servers
+        ** Initialise ROS publishers, subscribers and servers
         ************************************************************"""
         qos = QoSProfile(depth=10)
 
         # Initialise publishers
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, qos)
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
 
         # Initialise subscribers
-        self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback)
-        self.model_sub = rospy.Subscriber('gazebo/model_states', ModelStates, Respawn.check_model)
+        self.odom_sub = self.create_subscription(
+            Odometry, 
+            'odom', 
+            self.odom_callback, 
+            qos)
+        self.model_state_sub = self.create_subscription(
+            ModelStates, 
+            'gazebo/model_states', 
+            self.model_callback, 
+            qos)
+        self.pose_sub = self.create_subscription(Pose, 'pose???', pose_callback)
+        self.scan_sub = self.create_subscription(
+            LaserScan, 
+            'scan???', 
+            self.scan_callback,
+            qos)
+
+        # Initialise servers ???????????????????????
+        self.reset_proxy = self.create_service(Empty, 'gazebo/reset_simulation')
+        self.unpause_proxy = self.create_service(Empty, 'gazebo/unpause_physics')
+        self.pause_proxy = self.create_service(Empty, 'gazebo/pause_physics')
 
         """************************************************************
         ** Initialise timers
@@ -144,7 +159,7 @@ class TurtleBot3Environment():
             rospy.loginfo("Goal!!")
             reward = 1000
             self.cmd_vel_pub.publish(Twist())
-            self.goal_pose_x, self.goal_pose_y = self.respawn_goal.get_position(True, delete=True)
+            self.goal_pose_x, self.goal_pose_y = Respawn.get_position(True, True)
 
             distance = math.sqrt(
                 (self.goal_pose_x-self.last_pose_x)**2  
@@ -191,7 +206,7 @@ class TurtleBot3Environment():
                 pass
 
         if self.init_goal:
-            self.goal_pose_x, self.goal_pose_y = self.respawn_goal.get_position()
+            self.goal_pose_x, self.goal_pose_y = Respawn.get_position()
             self.init_goal = False
 
         distance = math.sqrt(
