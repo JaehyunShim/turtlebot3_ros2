@@ -19,6 +19,7 @@
 import rospy
 import math
 import numpy
+import rclpy
 from respawn_goal import Respawn
 
 from geometry_msgs.msg import Twist
@@ -28,8 +29,8 @@ from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 
 
-class TurtleBot3Environment():
-    def __init__(self):
+class DQNEnvironment(Node):
+    def __init__(self, stage):
         super().__init__('turtlebot3_environment')
 
         """************************************************************
@@ -45,6 +46,7 @@ class TurtleBot3Environment():
         self.action_size = 5
         self.init_goal = True
         self.get_goalbox = False
+        self.stage = stage
 
         """************************************************************
         ** Initialise ROS publishers, subscribers and servers
@@ -159,7 +161,7 @@ class TurtleBot3Environment():
             rospy.loginfo("Goal!!")
             reward = 1000
             self.cmd_vel_pub.publish(Twist())
-            self.goal_pose_x, self.goal_pose_y = Respawn.get_position(True, True)
+            self.goal_pose_x, self.goal_pose_y = Respawn.get_goal_pose(self.stage, True)
 
             distance = math.sqrt(
                 (self.goal_pose_x-self.last_pose_x)**2  
@@ -206,7 +208,7 @@ class TurtleBot3Environment():
                 pass
 
         if self.init_goal:
-            self.goal_pose_x, self.goal_pose_y = Respawn.get_position()
+            self.goal_pose_x, self.goal_pose_y = Respawn.get_goal_pose(self.stage, False)
             self.init_goal = False
 
         distance = math.sqrt(
@@ -243,3 +245,18 @@ class TurtleBot3Environment():
         yaw = numpy.arctan2(siny_cosp, cosy_cosp)
 
         return roll, pitch, yaw
+
+"""*******************************************************************************
+** Main
+*******************************************************************************"""
+def main(args=None):
+    rclpy.init(args=args)
+    dqn_environment = DQNEnvironment()
+    rclpy.spin(dqn_environment)
+
+    dqn_environment.destroy()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
