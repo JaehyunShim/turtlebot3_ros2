@@ -36,20 +36,10 @@ class DQNEnvironment(Node):
         """************************************************************
         ** Initialise variables
         ************************************************************"""
-        self.last_pose_x = 0.0
-        self.last_pose_y = 0.0
-        self.last_pose_theta = 0.0
-        self.goal_pose_x = 0.0
-        self.goal_pose_y = 0.0
-        self.goal_pose_theta = 0.0
-        self.angle = 0.0
-        self.action_size = 5
-        self.init_goal = True
-        self.get_goalbox = False
-        self.stage = stage
+        self.init_variables()
 
         """************************************************************
-        ** Initialise ROS publishers, subscribers and servers
+        ** Initialise ROS publishers and subscribers
         ************************************************************"""
         qos = QoSProfile(depth=10)
 
@@ -62,22 +52,16 @@ class DQNEnvironment(Node):
             'odom', 
             self.odom_callback, 
             qos)
-        self.model_state_sub = self.create_subscription(
-            ModelStates, 
-            'gazebo/model_states', 
-            self.model_callback, 
+        self.pose_sub = self.create_subscription(
+            Pose, 
+            'pose???', 
+            self.pose_callback
             qos)
-        self.pose_sub = self.create_subscription(Pose, 'pose???', pose_callback)
         self.scan_sub = self.create_subscription(
             LaserScan, 
-            'scan???', 
+            'scan', 
             self.scan_callback,
             qos)
-
-        # Initialise servers ???????????????????????
-        self.reset_proxy = self.create_service(Empty, 'gazebo/reset_simulation')
-        self.unpause_proxy = self.create_service(Empty, 'gazebo/unpause_physics')
-        self.pause_proxy = self.create_service(Empty, 'gazebo/pause_physics')
 
         """************************************************************
         ** Initialise timers
@@ -86,60 +70,98 @@ class DQNEnvironment(Node):
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def init_variables(self):
+        self.last_pose_x = 0.0
+        self.last_pose_y = 0.0
+        self.last_pose_theta = 0.0
+        self.distance = 0.0
+        self.angle = 0.0
+        self.action_size = 5
+        self.init_goal = True
+        self.get_goalbox = False
+        self.stage = stage
+        self.scan_ranges = numpy.ones(360) * numpy.Infinity
+        self.goal_distance = math.sqrt(
+                (self.goal_pose_x-self.last_pose_x)**2  
+                + (self.goal_pose_y-self.last_pose_y)**2)
+        self.goal_pose_x, self.goal_pose_y = Respawn.get_goal_pose(self.stage, False)
+        self.goal_distance = distance
+
     def odom_callback(self, msg):
         self.last_pose_x = msg.pose.pose.position.x
         self.last_pose_y = msg.pose.pose.position.y
         _, _, self.last_pose_theta = self.euler_from_quaternion(msg.pose.pose.orientation)
 
+        distance = math.sqrt(
+            (self.goal_pose_x-self.last_pose_x)**2
+            + (self.goal_pose_y-self.last_pose_y)**2)
+
         path_theta = math.atan2(
             self.goal_pose_y-self.last_pose_y,
             self.goal_pose_x-self.last_pose_x)
 
-        angle = path_theta - last_pose_theta
+        angle = path_theta - self.last_pose_theta
         if angle > math.pi:
             angle -= 2 * math.pi
 
         elif angle < -math.pi:
             angle += 2 * math.pi
-
+        self.distance = distance
         self.angle = angle
 
-    def get_state(self, scan):
-        scan_range = []
-        heading = self.heading
-        min_range = 0.13
-        done = False
+    def scan_callback(self, msg):
+        self.scan_ranges = msg.ranges
 
-        for i in range(len(scan.ranges)):
-            if scan.ranges[i] == float('Inf'):
-                scan_range.append(3.5)
-            elif numpy.isnan(scan.ranges[i]):
-                scan_range.append(0.0)
-            else:
-                scan_range.append(scan.ranges[i])
+    def reset(self):
+        self.init_variables()
 
-        obstacle_min_range = round(min(scan_range), 2)
-        obstacle_angle = numpy.argmin(scan_range)
-        if min_range > min(scan_range) > 0:
+        return self.get_state()
+
+    def step(self, action):
+        twist = Twist()
+        twist.linear.x = 0.15
+        max_angular_vel = 1.5
+        twist.angular.z = ((self.action_size - 1)/2 - action) * 0.5 * max_angular_vel
+        self.cmd_vel_pub.publish(twist)
+
+        state = self.get_state()
+        reward = self.set_reward(state, done, action)
+        done = self.get_goalbox
+
+        return state, reward, done
+
+    def get_state(self):
+        states = list()
+        states.append(self.scan_ranges)
+        states.append(self.angle)
+        states.append(self.distance)
+
+        min_obstacle_distance = min(self.scan_ranges)
+        states.append(min_obstacle_distance)
+
+        obstacle_angle = numpy.argmin(self.scan_ranges)
+        states.append(obstacle_angle)
+
+        min_range = 0.13  # unit: m
+        if min_range > min_obstacle_distance:
             done = True
+        else
+            done = False
+        states.append(done)
 
-        distance = math.sqrt(
-            (self.goal_pose_x-self.last_pose_x)**2
-            + (self.goal_pose_y-self.last_pose_y)**2)
-
-        if distance < 0.2:
+        if self.distance < 0.2:
             self.get_goalbox = True
 
-        return scan_range + [heading, distance, obstacle_min_range, obstacle_angle], done
+        return states
 
     def set_reward(self, state, done, action):
         yaw_reward = []
-        obstacle_min_range = state[-2]
+        min_obstacle_range = state[-2]
         distance = state[-3]
-        heading = state[-4]
+        angle = state[-4]
 
         for i in range(5):
-            angle = -math.pi / 4 + heading + (pi / 8 * i) + pi / 2
+            angle = -math.pi / 4 + angle + (pi / 8 * i) + pi / 2
             tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * angle % (2 * math.pi) / math.pi)[0])
             yaw_reward.append(tr)
 
@@ -153,12 +175,12 @@ class DQNEnvironment(Node):
         reward = ((round(yaw_reward[action] * 5, 2)) * distance_rate) + ob_reward
 
         if done:
-            rospy.loginfo("Collision!!")
+            print("Collision!!")
             reward = -500
             self.cmd_vel_pub.publish(Twist())
 
         if self.get_goalbox:
-            rospy.loginfo("Goal!!")
+            print("Goal!!")
             reward = 1000
             self.cmd_vel_pub.publish(Twist())
             self.goal_pose_x, self.goal_pose_y = Respawn.get_goal_pose(self.stage, True)
@@ -171,54 +193,6 @@ class DQNEnvironment(Node):
             self.get_goalbox = False
 
         return reward
-
-    def step(self, action):
-        max_angular_vel = 1.5
-        ang_vel = ((self.action_size - 1)/2 - action) * max_angular_vel * 0.5
-
-        twist = Twist()
-        twist.linear.x = 0.15
-        twist.angular.z = ang_vel
-        self.cmd_vel_pub.publish(twist)
-
-        data = None
-        while data is None:
-            try:
-                data = rospy.wait_for_message('scan', LaserScan, timeout=5)
-            except:
-                pass
-
-        state, done = self.get_state(data)
-        reward = self.set_reward(state, done, action)
-
-        return numpy.asarray(state), reward, done
-
-    def reset(self):
-        rospy.wait_for_service('gazebo/reset_simulation')
-        try:
-            self.reset_proxy()
-        except (rospy.ServiceException) as e:
-            print("gazebo/reset_simulation service call failed")
-
-        data = None
-        while data is None:
-            try:
-                data = rospy.wait_for_message('scan', LaserScan, timeout=5)
-            except:
-                pass
-
-        if self.init_goal:
-            self.goal_pose_x, self.goal_pose_y = Respawn.get_goal_pose(self.stage, False)
-            self.init_goal = False
-
-        distance = math.sqrt(
-            (self.goal_pose_x-self.last_pose_x)**2 
-            + (self.goal_pose_y-self.last_pose_y)**2) 
-
-        self.goal_distance = distance
-        state, done = self.get_state(data)
-
-        return numpy.asarray(state)
 
     """*******************************************************************************
     ** Below should be replaced when porting for ROS 2 Python tf_conversions is done.

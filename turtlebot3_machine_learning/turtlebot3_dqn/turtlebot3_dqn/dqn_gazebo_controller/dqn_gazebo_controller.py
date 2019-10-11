@@ -41,17 +41,40 @@ class Respawn(Node):
         self.model = self.f.read()
 
         """************************************************************
-        ** Initialise ROS publishers, subscribers and servers
+        ** Initialise ROS publishers, subscribers and client
         ************************************************************"""
-        # Initialise servers ???????????????????????
-        self.spawn_model_server = self.create_service(SpawnModel, 'gazebo/spawn_sdf_model', respawn_model_callback)
-        self.delete_model_server = self.create_service(DeleteModel, 'gazebo/unpause_physics', delete_model_callback)
+        self.model_state_sub = self.create_subscription(
+            ModelStates, 
+            'gazebo/model_states', 
+            self.model_callback, 
+            qos)
+        self.gazebo_cmd_sub = self.create_subscription(
+            String, 
+            'gazebo/command', 
+            self.gazebo_cmd_callback, 
+            qos)
+
+        # Initialise client
+        self.spawn_model_client = self.create_service(SpawnModel, 'gazebo/spawn_sdf_model')
+        self.delete_model_client = self.create_service(DeleteModel, 'gazebo/unpause_physics')
+        self.reset_simulation_client = self.create_service(Empty, 'gazebo/reset_simulation')
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def get_goal_pose(self, stage, delete):
+    def gazebo_cmd_callback(self, msg)
+        if (msg.data == 'reset')
+            reset_model
+        else if (msg.data == 'delete')
+            delete_model
 
+    def reset_model(self, model):
+        req = reset_simulation_client.Request()
+        while not client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        future = client.call_async(req)
+
+    def get_goal_pose(self, stage, delete):
         if delete:
             self.delete_model()
 
@@ -67,11 +90,11 @@ class Respawn(Node):
             goal_pose_x = goal_pose_x_list[index]
             goal_pose_y = goal_pose_y_list[index]
 
-        self.respawn_model_callback(goal_pose_x, goal_pose_y)
+        self.respawn_model(goal_pose_x, goal_pose_y)
 
         return goal_pose_x, goal_pose_y
 
-    def respawn_model_callback(self, goal_pose_x, goal_pose_y):
+    def respawn_model(self, goal_pose_x, goal_pose_y):
             spawn_model_server(
                 'goal', 
                 self.model, 
@@ -89,7 +112,7 @@ class Respawn(Node):
             else 
                 result = False
 
-    def delete_model_callback(self):
+    def delete_model(self):
             del_model_prox('goal')
 
 """*******************************************************************************
