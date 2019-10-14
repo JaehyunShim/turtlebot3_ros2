@@ -16,8 +16,10 @@
 #
 # Authors: Ryan Shim, Gilbert
 
-import rospy
+import rclpy
+from rclpy.qos import QoSProfile
 import sys
+
 from std_msgs.msg import Float32
 from std_msgs.msg import Float32MultiArray
 from PyQt5.QtWidgets import QProgressBar
@@ -30,7 +32,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore
 
 
-class ActionGraph(QThread):
+class DQNActionGraph(QThread):
     change_value1 = pyqtSignal(int)
     change_value2 = pyqtSignal(int)
     change_value3 = pyqtSignal(int)
@@ -173,9 +175,7 @@ class Form(QWidget):
         form_lbx.addWidget(self.reward, 3, 0)
         self.setLayout(form_lbx)
 
-"""*******************************************************************************
-** Main
-*******************************************************************************"""
+
 def main(args=None):
     rclpy.init('progress')
     app = QApplication(sys.argv)

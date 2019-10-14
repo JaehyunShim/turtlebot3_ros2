@@ -17,13 +17,15 @@
 # Authors: Ryan Shim, Gilbert
 
 import rclpy
+from rclpy.qos import QoSProfile
+
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.msg import ModelStates
 
 
-class Turtlebot3MovingObstacle():
+class DQNMovingObstacle():
     def __init__(self):
-        super().__init__('turtlebot3_moving_obstacle')
+        super().__init__('dqn_moving_obstacle')
 
         """************************************************************
         ** Initialise variables
@@ -38,15 +40,15 @@ class Turtlebot3MovingObstacle():
 
         # Initialise publishers
         self.model_state_pub = self.create_publisher(
-            ModelState, 
-            'gazebo/set_model_state', 
+            ModelState,
+            'gazebo/set_model_state',
             qos)
 
         # Initialise subscribers
         self.model_state_sub = self.create_subscription(
             ModelStates,
-            'gazebo/model_states', 
-            self.model_state_callback, 
+            'gazebo/model_states',
+            self.model_state_callback,
             qos)
 
     """*******************************************************************************
@@ -59,192 +61,190 @@ class Turtlebot3MovingObstacle():
                 obstacle_1.model_name = msg.name[i]
                 obstacle_1.pose = msg.pose[i]
 
-                if state_1 == 0:
+                if self.state_1 == 0:
                     obstacle_1.pose.position.x -= 0.005
                     obstacle_1.pose.position.y -= 0.12
                     if abs(obstacle_1.pose.position.x - 1.5) < 0.05 and abs(obstacle_1.pose.position.y - 0.8) < 0.05:
-                        state_1 = 1
+                        self.state_1 = 1
 
-                elif state_1 == 1:
+                elif self.state_1 == 1:
                     obstacle_1.pose.position.x -= 0.01
                     obstacle_1.pose.position.y += 0.007
                     if abs(obstacle_1.pose.position.x - 0.5) < 0.05 and abs(obstacle_1.pose.position.y - 1.5) < 0.05:
-                        state_1 = 2
+                        self.state_1 = 2
 
-                elif state_1 == 2:
+                elif self.state_1 == 2:
                     obstacle_1.pose.position.x -= 0.008
                     obstacle_1.pose.position.y -= 0.002
                     if abs(obstacle_1.pose.position.x + 0.3) < 0.05 and abs(obstacle_1.pose.position.y - 1.3) < 0.05:
-                        state_1 = 3
+                        self.state_1 = 3
 
-                elif state_1 == 3:
+                elif self.state_1 == 3:
                     obstacle_1.pose.position.x -= 0.007
                     obstacle_1.pose.position.y -= 0.005
                     if abs(obstacle_1.pose.position.x + 1) < 0.05 and abs(obstacle_1.pose.position.y - 0.8) < 0.05:
-                        state_1 = 4
+                        self.state_1 = 4
 
-                elif state_1 == 4:
+                elif self.state_1 == 4:
                     obstacle_1.pose.position.x -= 0.01
                     obstacle_1.pose.position.y += 0.007
                     if abs(obstacle_1.pose.position.x + 2) < 0.05 and abs(obstacle_1.pose.position.y - 1.5) < 0.05:
-                        state_1 = 5
+                        self.state_1 = 5
 
-                elif state_1 == 5:
+                elif self.state_1 == 5:
                     obstacle_1.pose.position.x -= 0.002
                     obstacle_1.pose.position.y -= 0.007
                     if abs(obstacle_1.pose.position.x + 2.2) < 0.05 and abs(obstacle_1.pose.position.y - 0.8) < 0.05:
-                        state_1 = 6
+                        self.state_1 = 6
 
-                elif state_1 == 6:
+                elif self.state_1 == 6:
                     obstacle_1.pose.position.x += 0.004
                     obstacle_1.pose.position.y -= 0.011
                     if abs(obstacle_1.pose.position.x + 1.8) < 0.05 and abs(obstacle_1.pose.position.y + 0.3) < 0.05:
-                        state_1 = 7
+                        self.state_1 = 7
 
-                elif state_1 == 7:
+                elif self.state_1 == 7:
                     obstacle_1.pose.position.x += 0.003
                     obstacle_1.pose.position.y -= 0.007
                     if abs(obstacle_1.pose.position.x + 1.5) < 0.05 and abs(obstacle_1.pose.position.y + 1) < 0.05:
-                        state_1 = 8
+                        self.state_1 = 8
 
-                elif state_1 == 8:
+                elif self.state_1 == 8:
                     obstacle_1.pose.position.x += 0.009
                     obstacle_1.pose.position.y += 0.007
                     if abs(obstacle_1.pose.position.x + 0.6) < 0.05 and abs(obstacle_1.pose.position.y + 0.3) < 0.05:
-                        state_1 = 9
+                        self.state_1 = 9
 
-                elif state_1 == 9:
+                elif self.state_1 == 9:
                     obstacle_1.pose.position.x += 0.011
                     obstacle_1.pose.position.y -= 0.011
                     if abs(obstacle_1.pose.position.x - 0.5) < 0.05 and abs(obstacle_1.pose.position.y + 1.4) < 0.05:
-                        state_1 = 10
+                        self.state_1 = 10
 
-                elif state_1 == 10:
+                elif self.state_1 == 10:
                     obstacle_1.pose.position.x += 0.006
                     obstacle_1.pose.position.y -= 0.006
                     if abs(obstacle_1.pose.position.x - 1.1) < 0.05 and abs(obstacle_1.pose.position.y + 2) < 0.05:
-                        state_1 = 11
+                        self.state_1 = 11
 
-                elif state_1 == 11:
+                elif self.state_1 == 11:
                     obstacle_1.pose.position.x += 0.009
                     obstacle_1.pose.position.y += 0.01
                     if abs(obstacle_1.pose.position.x - 2) < 0.05 and abs(obstacle_1.pose.position.y + 1) < 0.05:
-                        state_1 = 12
+                        self.state_1 = 12
 
-                elif state_1 == 12:
+                elif self.state_1 == 12:
                     obstacle_1.pose.position.x -= 0.008
                     obstacle_1.pose.position.y += 0.01
                     if abs(obstacle_1.pose.position.x - 1.2) < 0.05 and abs(obstacle_1.pose.position.y + 0) < 0.05:
-                        state_1 = 13
+                        self.state_1 = 13
 
-                elif state_1 == 13:
+                elif self.state_1 == 13:
                     obstacle_1.pose.position.x -= 0.007
                     obstacle_1.pose.position.y += 0.005
                     if abs(obstacle_1.pose.position.x - 0.5) < 0.05 and abs(obstacle_1.pose.position.y - 0.5) < 0.05:
-                        state_1 = 14
+                        self.state_1 = 14
 
-                elif state_1 == 14:
+                elif self.state_1 == 14:
                     obstacle_1.pose.position.x += 0.017
                     obstacle_1.pose.position.y += 0.008
                     if abs(obstacle_1.pose.position.x - 2.2) < 0.05 and abs(obstacle_1.pose.position.y - 1.3) < 0.05:
-                        state_1 = 15
+                        self.state_1 = 15
 
-                elif state_1 == 15:
+                elif self.state_1 == 15:
                     obstacle_1.pose.position.x -= 0.002
                     obstacle_1.pose.position.y += 0.007
                     if abs(obstacle_1.pose.position.x - 2) < 0.05 and abs(obstacle_1.pose.position.y - 2) < 0.05:
-                        state_1 = 0
+                        self.state_1 = 0
 
                 self.model_state_pub.publish(obstacle_1)
 
-            else if msg.name[i] == 'obstacle_2':
+            elif msg.name[i] == 'obstacle_2':
                 obstacle_2 = ModelState()
                 obstacle_2.model_name = msg.name[i]
                 obstacle_2.pose = msg.pose[i]
 
-                if state_2 == 0:
+                if self.state_2 == 0:
                     obstacle_2.pose.position.x += 0.007
                     obstacle_2.pose.position.y -= 0.001
                     if abs(obstacle_2.pose.position.x + 1.3) < 0.05 and abs(obstacle_2.pose.position.y + 2.1) < 0.05:
-                        state_2 = 1
+                        self.state_2 = 1
 
-                elif state_2 == 1:
+                elif self.state_2 == 1:
                     obstacle_2.pose.position.x += 0.009
                     obstacle_2.pose.position.y += 0.009
                     if abs(obstacle_2.pose.position.x + 0.4) < 0.05 and abs(obstacle_2.pose.position.y + 1.2) < 0.05:
-                        state_2 = 2
+                        self.state_2 = 2
 
-                elif state_2 == 2:
+                elif self.state_2 == 2:
                     obstacle_2.pose.position.x -= 0.006
                     obstacle_2.pose.position.y += 0.006
                     if abs(obstacle_2.pose.position.x + 1) < 0.05 and abs(obstacle_2.pose.position.y + 0.6) < 0.05:
-                        state_2 = 3
+                        self.state_2 = 3
 
-                elif state_2 == 3:
+                elif self.state_2 == 3:
                     obstacle_2.pose.position.x += 0.008
                     obstacle_2.pose.position.y -= 0.001
                     if abs(obstacle_2.pose.position.x + 0.2) < 0.05 and abs(obstacle_2.pose.position.y + 0.7) < 0.05:
-                        state_2 = 4
+                        self.state_2 = 4
 
-                elif state_2 == 4:
+                elif self.state_2 == 4:
                     obstacle_2.pose.position.x += 0.013
                     obstacle_2.pose.position.y -= 0.013
                     if abs(obstacle_2.pose.position.x - 1.1) < 0.05 and abs(obstacle_2.pose.position.y + 2) < 0.05:
-                        state_2 = 5
+                        self.state_2 = 5
 
-                elif state_2 == 5:
+                elif self.state_2 == 5:
                     obstacle_2.pose.position.x += 0.009
                     obstacle_2.pose.position.y += 0.01
                     if abs(obstacle_2.pose.position.x - 2) < 0.05 and abs(obstacle_2.pose.position.y + 1) < 0.05:
-                        state_2 = 6
+                        self.state_2 = 6
 
-                elif state_2 == 6:
+                elif self.state_2 == 6:
                     obstacle_2.pose.position.x -= 0.008
                     obstacle_2.pose.position.y += 0.01
                     if abs(obstacle_2.pose.position.x - 1.2) < 0.05 and abs(obstacle_2.pose.position.y + 0) < 0.05:
-                        state_2 = 7
+                        self.state_2 = 7
 
-                elif state_2 == 7:
+                elif self.state_2 == 7:
                     obstacle_2.pose.position.x -= 0.007
                     obstacle_2.pose.position.y += 0.02
                     if abs(obstacle_2.pose.position.x - 0.5) < 0.05 and abs(obstacle_2.pose.position.y - 2) < 0.05:
-                        state_2 = 8
+                        self.state_2 = 8
 
-                elif state_2 == 8:
+                elif self.state_2 == 8:
                     obstacle_2.pose.position.x -= 0.026 * 0.5
                     obstacle_2.pose.position.y -= 0.002 * 0.5
                     if abs(obstacle_2.pose.position.x + 2.1) < 0.05 and abs(obstacle_2.pose.position.y - 1.8) < 0.05:
-                        state_2 = 9
+                        self.state_2 = 9
 
-                elif state_2 == 9:
+                elif self.state_2 == 9:
                     obstacle_2.pose.position.x += 0.016 * 0.5
                     obstacle_2.pose.position.y -= 0.016 * 0.5
                     if abs(obstacle_2.pose.position.x + 0.5) < 0.05 and abs(obstacle_2.pose.position.y - 0.2) < 0.05:
-                        state_2 = 10
+                        self.state_2 = 10
 
-                elif state_2 == 10:
+                elif self.state_2 == 10:
                     obstacle_2.pose.position.x -= 0.004 * 0.5
                     obstacle_2.pose.position.y -= 0.023 * 0.5
                     if abs(obstacle_2.pose.position.x + 0.9) < 0.05 and abs(obstacle_2.pose.position.y + 2.1) < 0.05:
-                        state_2 = 11
+                        self.state_2 = 11
 
-                elif state_2 == 11:
+                elif self.state_2 == 11:
                     obstacle_2.pose.position.x -= 0.011
                     obstacle_2.pose.position.y += 0.001
                     if abs(obstacle_2.pose.position.x + 2) < 0.05 and abs(obstacle_2.pose.position.y + 2) < 0.05:
-                        state_2 = 0
+                        self.state_2 = 0
 
                 self.model_state_pub.publish(obstacle_2)
 
-"""*******************************************************************************
-** Main
-*******************************************************************************"""
+
 def main(args=None):
     rclpy.init(args=args)
-    turtlebot3_moving_obstacle = Turtlebot3MovingObstacle()
-    rclpy.spin(turtlebot3_moving_obstacle)
+    dqn_moving_obstacle = DQNMovingObstacle()
+    rclpy.spin(dqn_moving_obstacle)
 
-    turtlebot3_dqn.destroy()
+    dqn_moving_obstacle.destroy()
     rclpy.shutdown()
 
 

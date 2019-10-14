@@ -14,9 +14,10 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         # To be added
-        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_interactive_marker.launch.py'))),
-        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_obstacle_detection.launch.py'))),
-        # ('share/' + package_name + '/rviz', glob.glob(os.path.join('rviz', 'turtlebot3_interactive_marker.rviz'))),
+        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage1.launch.py'))),
+        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage2.launch.py'))),
+        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage3.launch.py'))),
+        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage4.launch.py'))),
     ],
     install_requires=['setuptools','launch'],
     zip_safe=True,
@@ -38,6 +39,11 @@ setup(
     entry_points={
         'console_scripts': [
             # To be added
+            'dqn_agent = turtlebot3_dqn.turtlebot3_moving_obstacle.dqn_agent:main', 
+            'dqn_environment = turtlebot3_dqn.turtlebot3_moving_obstacle.dqn_environment:main', 
+            'dqn_gazebo = turtlebot3_dqn.turtlebot3_moving_obstacle.dqn_gazebo:main', 
+            'dqn_action_graph = turtlebot3_dqn.turtlebot3_moving_obstacle.dqn_action_graph:main', 
+            'dqn_result_graph = turtlebot3_dqn.turtlebot3_moving_obstacle.dqn_result_graph:main', 
             'turtlebot3_moving_obstacle = turtlebot3_dqn.turtlebot3_moving_obstacle.turtlebot3_moving_obstacle:main', 
             'turtlebot3_moving_obstacle2 = turtlebot3_dqn.turtlebot3_moving_obstacle.turtlebot3_moving_obstacle2:main', 
         ],

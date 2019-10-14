@@ -17,13 +17,16 @@
 # Authors: Ryan Shim, Gilbert
 
 import rclpy
+from rclpy.qos import QoSProfile
+
+from geometry_msgs.msg import Twist
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.msg import ModelStates
 
 
-class Turtlebot3MovingObstacle():
+class DQNMovingObstacle():
     def __init__(self):
-        super().__init__('turtlebot3_moving_obstacle')
+        super().__init__('dqn_moving_obstacle')
 
         """************************************************************
         ** Initialise ROS publishers and subscribers
@@ -56,15 +59,13 @@ class Turtlebot3MovingObstacle():
                 obstacle.twist.angular.z = 0.5
                 self.model_state_pub.publish(obstacle)
 
-"""*******************************************************************************
-** Main
-*******************************************************************************"""
+
 def main(args=None):
     rclpy.init(args=args)
-    turtlebot3_moving_obstacle = Turtlebot3MovingObstacle()
-    rclpy.spin(turtlebot3_moving_obstacle)
+    dqn_moving_obstacle = DQNMovingObstacle()
+    rclpy.spin(dqn_moving_obstacle)
 
-    turtlebot3_dqn.destroy()
+    dqn_moving_obstacle.destroy()
     rclpy.shutdown()
 
 

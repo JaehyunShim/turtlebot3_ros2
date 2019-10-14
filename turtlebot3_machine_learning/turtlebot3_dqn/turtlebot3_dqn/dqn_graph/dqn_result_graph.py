@@ -17,7 +17,9 @@
 # Authors: Gilbert
 
 import pickle
-import rospy
+import rclpy
+from rclpy.qos import QoSProfile
+
 import sys
 from std_msgs.msg import Float32MultiArray
 from PyQt5.QtGui import *
@@ -104,9 +106,7 @@ class Window(QMainWindow):
         with open("graph.txt", "wb") as f:
             pickle.dump(data, f)
 
-"""*******************************************************************************
-** Main
-*******************************************************************************"""
+
 def main(args=None):
     rclpy.init('graph')
     app = QApplication(sys.argv)

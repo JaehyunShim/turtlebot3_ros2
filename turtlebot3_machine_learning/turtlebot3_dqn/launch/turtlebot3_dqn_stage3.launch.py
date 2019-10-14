@@ -22,9 +22,9 @@ import os
 
 
 def generate_launch_description():
-    stage = LaunchConfiguration('stage', default='4')
+    stage = LaunchConfiguration('stage', default='3')
 
-    saved_model_file_name = 'stage_4_'
+    saved_model_file_name = 'stage3_'
     saved_model = os.path.join(
         get_package_share_directory('turtlebot3_dqn'),
         'save_model',
@@ -41,7 +41,7 @@ def generate_launch_description():
         Node(
             package='turtlebot3_dqn',
             node_executable='turtlebot3_moving_obstacle',
-            node_name='turtlebot3_moving_obstacle2',
+            node_name='turtlebot3_moving_obstacle',
             output='screen'),
 
         Node(

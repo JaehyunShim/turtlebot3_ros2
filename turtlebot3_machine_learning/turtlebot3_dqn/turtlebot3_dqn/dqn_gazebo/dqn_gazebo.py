@@ -26,28 +26,28 @@ from gazebo_msgs.srv import SpawnModel
 from gazebo_msgs.msg import ModelStates
 
 
-class Respawn(Node):
+class DQNGazebo(Node):
     def __init__(self, stage):
-        super().__init__('turtlebot3_environment')
+        super().__init__('dqn_gazebo')
 
         """************************************************************
         ** Initialise variables
         ************************************************************"""
-        self.model_path = os.path.dirname(os.path.realpath(__file__))
-        self.model_path = self.model_path.replace(
-            'turtlebot3_machine_learning/turtlebot3_dqn/src/turtlebot3_dqn',
-            'turtlebot3_simulations/turtlebot3_gazebo/models/turtlebot3_square/goal_box/model.sdf')
-        self.f = open(self.model_path, 'r')
         self.model = self.f.read()
+        self.model_name = 'goal'
+        self.stage = 1
+        self.goal_pose_x = 0.0
+        self.goal_pose_y = 0.0
 
         """************************************************************
-        ** Initialise ROS publishers, subscribers and client
+        ** Initialise ROS publishers, subscribers and clients
         ************************************************************"""
-        self.model_state_sub = self.create_subscription(
-            ModelStates, 
-            'gazebo/model_states', 
-            self.model_callback, 
-            qos)
+        qos = QoSProfile(depth=10)
+
+        # Initialise publishers
+        self.goal_pose_pub = self.create_publisher(Pose, 'goal_pose', qos)
+
+        # Initialise subscribers
         self.gazebo_cmd_sub = self.create_subscription(
             String, 
             'gazebo/command', 
@@ -55,75 +55,79 @@ class Respawn(Node):
             qos)
 
         # Initialise client
-        self.spawn_model_client = self.create_service(SpawnModel, 'gazebo/spawn_sdf_model')
-        self.delete_model_client = self.create_service(DeleteModel, 'gazebo/unpause_physics')
-        self.reset_simulation_client = self.create_service(Empty, 'gazebo/reset_simulation')
+        self.spawn_model_client = self.create_client(Empty, 'gazebo/spawn_sdf_model')
+        self.unpause_model_client = self.create_client(Empty, 'gazebo/unpause_physics')
+        self.delete_model_client = self.create_client(DeleteModel, 'gazebo/delete_model')
+        self.reset_simulation_client = self.create_client(Empty, 'gazebo/reset_simulation')
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def gazebo_cmd_callback(self, msg)
-        if (msg.data == 'reset')
-            reset_model
-        else if (msg.data == 'delete')
-            delete_model
-
-    def reset_model(self, model):
-        req = reset_simulation_client.Request()
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
-        future = client.call_async(req)
-
-    def get_goal_pose(self, stage, delete):
-        if delete:
+        if (msg.data == 'succeed')
+            self.reset_simulation()
             self.delete_model()
+            self.generate_goal_pose()
+            self.spawn_model()
+        else if (msg.data == 'fail')
+            self.reset_simulation()
+            self.spawn_model()
 
-        if stage != 4:
-            goal_pose_x = random.randrange(-12, 13) / 10.0
-            goal_pose_y = random.randrange(-12, 13) / 10.0
-                
-        else:
-            goal_pose_x_list = [0.6,  1.9,  0.5, 0.2, -0.8, -1.0, -1.9,  0.5, 2.0, 0.5,  0.0, -0.1, -2.0]
-            goal_pose_y_list = [0.0, -0.5, -1.9, 1.5, -0.9,  1.0,  1.1, -1.5, 1.5, 1.8, -1.0,  1.6, -0.8]
-
-            index = random.randrange(0, 13)  # must be different points every time...???? should know where obstacles are? 
-            goal_pose_x = goal_pose_x_list[index]
-            goal_pose_y = goal_pose_y_list[index]
-
-        self.respawn_model(goal_pose_x, goal_pose_y)
-
-        return goal_pose_x, goal_pose_y
-
-    def respawn_model(self, goal_pose_x, goal_pose_y):
-            spawn_model_server(
-                'goal', 
-                self.model, 
-                'robotis_namespace', 
-                goal_pose_x, 
-                goal_pose_y, 
-                "world")
-            print("Goal position : %.1f, %.1f", goal_pose_x, goal_pose_y)
-
-    def check_model(self, model):
-        result = False
-        for i in range(len(model.name)):
-            if model.name[i] == "goal":
-                result = True
-            else 
-                result = False
+    def reset_simulation(self, model):
+        while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        resp = self.reset_simulation_client.call_async(req)
+        rclpy.spin_until_future_complete(self, resp)
 
     def delete_model(self):
-            del_model_prox('goal')
+        while not self.delete_model_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        req = self.model_name
+        resp = self.reset_simulation_client.call_async(req)   
+        rclpy.spin_until_future_complete(self, resp)
+
+    def generate_goal_pose(self):
+        if self.stage != 4:
+            self.goal_pose_x = random.randrange(-12, 13) / 10.0
+            self.goal_pose_y = random.randrange(-12, 13) / 10.0
+        else:
+            goal_pose_list = [[0.6,0.0], [1.9,-0.5], [0.5,-1.9], [0.2,1.5], [-0.8,-0.9], [-1.0,1.0],
+                [-1.9, 1.1], [0.5,-1.5], [2.0,1.5], [0.5,1.8], [0.0,-1.0], [-0.1,1.6], [-2.0,0.8]]
+            index = random.randrange(0, 13)
+            self.goal_pose_x = goal_pose_x_list[index][0]
+            self.goal_pose_y = goal_pose_y_list[index][1]
+
+        goal_pose = Pose()
+        goal_pose.position.x = self.goal_pose_x
+        goal_pose.position.y = self.goal_pose_y
+
+        goal_pose_pub.publish(goal_pose)
+        print("Goal pose: %.1f, %.1f", goal_pose_x, goal_pose_y)
+
+    def spawn_model(self):
+        goal_pose = Pose()
+        goal_pose.position.x = self.goal_pose_x
+        goal_pose.position.y = self.goal_pose_y
+
+        while not self.spawn_model_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        req = [self.model_name, 
+                self.model, 
+                'robotis_namespace', 
+                goal_pose, 
+                "world"]
+        resp = self.reset_simulation_client.call_async(req)   
+        rclpy.spin_until_future_complete(self, resp)
 
 """*******************************************************************************
 ** Main
 *******************************************************************************"""
 def main(args=None):
     rclpy.init(args=args)
-    dqn_environment = DQNEnvironment()
-    rclpy.spin(dqn_environment)
+    dqn_gazebo = DQNGazebo()
+    rclpy.spin(dqn_gazebo)
 
-    dqn_environment.destroy()
+    dqn_gazebo.destroy()
     rclpy.shutdown()
 
 

@@ -29,15 +29,13 @@ import random
 import rclpy
 import sys
 import time
-from turtlebot3_dqn.turtlebot3_environment.environment_stage_1 import Environment
-# 1env for 1, 2env for 2... 4env for 4
 
+from std_msgs.msg import Bool
 from std_msgs.msg import Float32MultiArray
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 EPISODES = 3000
-EPISODE_STEPS = 6000 # better naming...?? than episode_step
 
 
 class DQNAgent():
@@ -66,8 +64,6 @@ class DQNAgent():
         # Build model and target model
         self.model = self.build_model()
         self.target_model = self.build_model()
-
-        # Initialise target model
         self.update_target_model()
 
         # Load previously saved models
@@ -90,8 +86,17 @@ class DQNAgent():
         qos = QoSProfile(depth=10)
 
         # Initialise publishers
+        self.reset_pub = self.create_publisher(Bool, 'reset', qos)
+        self.action_pub = self.create_publisher(Float32MultiArray, 'action', qos)
         self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
         self.dqn_result_pub = self.create_publisher(Float32MultiArray, 'dqn_result', qos)
+
+        # Initialise subscribers
+        self.state_sub = self.create_subscription(
+            Float32MultiArray, 
+            'state', 
+            self.state_callback,
+            qos)
 
         """************************************************************
         ** Start process
@@ -102,75 +107,97 @@ class DQNAgent():
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def process(self):
-        environment = Environment()
-
-        global_step = 0
-        scores, episodes = [], []
+        scores, episodes, global_step = [], [], 0
         start_time = time.time()
 
         for episode in range(EPISODES):
             done = False
+            episode_step = 0
+            # state = environment.reset()
+            reset = Bool()
+            reset.data = True
+            reset_pub.publish(reset)
             score = 0
-            # Initialise environment
-            state = environment.reset()
 
-            for t in range(EPISODE_STEPS):
+            while not done
+                episode_step += 1
                 global_step += 1
-                # Choose an aciton based on ?? the current state
+
+                # Aciton based on the current state
                 action = self.get_action(state)
-                # .... and collect samples 
-                next_state, reward, done = environment.step(action)
-
-                self.append_sample(state, action, reward, next_state, done)
-
-                if len(self.memory) >= self.train_start:
-                    if global_step <= self.target_update:
-                        self.train_model()
-                    else:
-                        self.train_model(True)
-
-                score += reward
+                real_action = Twist()
                 state = next_state
+                score += reward
 
                 # Publish action to action graph
                 dqn_action = Float32MultiArray()
                 dqn_action.data = [action, score, reward]
                 dqn_action_pub.publish(dqn_action)
 
-                if t >= 500:
-                    rospy.loginfo("Time out!!")
+                real_action.linear.x = 0.15
+                max_angular_vel = 1.5
+                real_action.angular.z = ((self.action_size - 1)/2 - action) * 0.5 * max_angular_vel
+                action_pub.publish(real_action)
+                
+                # Next state and reward
+                next_state = self.next_state
+                reward = self.reward
+                done = self.done
+
+                # Save <s, a, r, s'> samples 
+                self.append_sample(state, action, reward, next_state, done)
+
+                # Train model using collected samples
+                if len(self.memory) >= self.train_start:
+                    if global_step <= self.target_update:
+                        self.train_model()
+                    else:
+                        self.train_model(True)
+
+                if episode_step >= 500:
+                    print("Time out!!")
+                    episode_step = 0
                     done = True
 
                 if done:
                     # Update neural network
-                    self.update_target_model()
+                    agent.update_target_model()
                     scores.append(score)
                     episodes.append(e)
                     
                     # Publish result to result graph
                     dqn_result = Float32MultiArray()
-                    dqn_result.data = [score, np.max(self.q_value)]
+                    dqn_result.data = [score, np.max(agent.q_value)]
                     dqn_result_pub.publish(dqn_result)
 
                     # Display elapsed time
                     curr_time = time.time()
                     m, s = divmod(int(curr_time - start_time), 60)
                     h, m = divmod(m, 60)
-                    print('Ep: %d, score: %.2f, memory: %d, epsilon: %.2f, time: %d:%02d:%02d',
-                        e, score, len(self.memory), self.epsilon, h, m, s)
+                    print(
+                        "Ep:", episode, 
+                        "score:", score, 
+                        "memory length:", len(agent.memory),
+                        "epsilon:", agent.epsilon,
+                        "time:" h, ":", m, ":", s)
 
                     param_keys = ['epsilon']
-                    param_values = [self.epsilon]
+                    param_values = [agent.epsilon]
                     param_dictionary = dict(zip(param_keys, param_values))
 
                 if global_step % self.target_update == 0:
                     rospy.loginfo("UPDATE TARGET NETWORK")
 
-                # Update result and save model every 100 episodes
+                # Update result and save model every 10 episodes
                 if episode % 10 == 0:
                     self.model.save(self.dir_path + str(episode) + '.h5')
                     with open(self.dir_path + str(episode) + '.json', 'w') as outfile:
                         json.dump(param_dictionary, outfile)
+
+    def state_callback(self, msg):
+        self.next_state = msg.data[0]
+        self.reward = msg.data[1]
+        self.done = msg.data[2]
 
     def build_model(self):
         model = Sequential()
@@ -208,32 +235,31 @@ class DQNAgent():
         y_batch = numpy.empty((0, self.action_size), dtype=numpy.float64)
 
         for i in range(self.batch_size):
-            states = mini_batch[i][0]
-            actions = mini_batch[i][1]
-            rewards = mini_batch[i][2]
-            next_states = mini_batch[i][3]
-            dones = mini_batch[i][4]
+            state = mini_batch[i][0]
+            action = mini_batch[i][1]
+            reward = mini_batch[i][2]
+            next_state = mini_batch[i][3]
+            done = mini_batch[i][4]
 
-            q_value = self.model.predict(states.reshape(1, len(states)))
+            q_value = self.model.predict(state.reshape(1, len(state)))
             self.q_value = q_value
 
             if target:
-                next_target = self.target_model.predict(next_states.reshape(1, len(next_states)))
-
+                next_target = self.target_model.predict(next_state.reshape(1, len(next_state)))
             else:
-                next_target = self.model.predict(next_states.reshape(1, len(next_states)))
+                next_target = self.model.predict(next_state.reshape(1, len(next_state)))
 
-            next_q_value = self.get_q_value(rewards, next_target, dones)
+            next_q_value = self.get_q_value(reward, next_target, done)
 
-            x_batch = numpy.append(x_batch, numpy.array([states.copy()]), axis=0)
+            x_batch = numpy.append(x_batch, numpy.array([state.copy()]), axis=0)
             y_sample = q_value.copy()
 
-            y_sample[0][actions] = next_q_value
+            y_sample[0][action] = next_q_value
             y_batch = numpy.append(y_batch, numpy.array([y_sample[0]]), axis=0)
 
-            if dones:
-                x_batch = numpy.append(x_batch, numpy.array([next_states.copy()]), axis=0)
-                y_batch = numpy.append(y_batch, numpy.array([[rewards] * self.action_size]), axis=0)
+            if done:
+                x_batch = numpy.append(x_batch, numpy.array([next_state.copy()]), axis=0)
+                y_batch = numpy.append(y_batch, numpy.array([[reward] * self.action_size]), axis=0)
 
         self.model.fit(x_batch, y_batch, batch_size=self.batch_size, epochs=1, verbose=0)
 
