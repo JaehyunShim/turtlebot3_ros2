@@ -16,22 +16,23 @@
 #
 # Authors: Ryan Shim, Gilbert
 
-import rospy
 import math
 import numpy
 import rclpy
-from respawn_goal import Respawn
+from rclpy.qos import Node
+from rclpy.qos import QoSProfile
+import sys
 
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float32MultiArray
 from nav_msgs.msg import Odometry
-from std_srvs.srv import Empty
 
 
-class DQNEnvironment():
+class DQNEnvironment(Node):
     def __init__(self, stage):
-        super().__init__('turtlebot3_enviroFnment')
+        super().__init__('dqn_environment')
 
         """************************************************************
         ** Initialise variables
@@ -52,7 +53,7 @@ class DQNEnvironment():
         self.scan_ranges = numpy.ones(360) * numpy.Infinity
         self.min_obstacle_distance = 0.0
         self.min_obstacle_angle = 0.0
-        
+
         """************************************************************
         ** Initialise ROS publishers and subscribers
         ************************************************************"""
@@ -60,38 +61,36 @@ class DQNEnvironment():
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
-        self.state_pub = self.create_publisher(Float32MultiArray, 'state', qos)
-        self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
-        self.dqn_result_pub = self.create_publisher(loat32MultiArray, 'dqn_result', qos)
+        self.dqn_step_pub = self.create_publisher(Float32MultiArray, 'state', qos)
 
         # Initialise subscribers
-        self.action_sub = self.create_subscription(
-            Pose, 
-            'action', 
-            self.action_callback,
+        self.dqn_action_sub = self.create_subscription(
+            Float32MultiArray,
+            'dqn_action',
+            self.dqn_action_callback,
             qos)
         self.goal_pose_sub = self.create_subscription(
-            Pose, 
-            'goal_pose', 
+            Pose,
+            'goal_pose',
             self.goal_pose_callback,
             qos)
         self.odom_sub = self.create_subscription(
-            Odometry, 
-            'odom', 
-            self.odom_callback, 
+            Odometry,
+            'odom',
+            self.odom_callback,
             qos)
         self.scan_sub = self.create_subscription(
-            LaserScan, 
-            'scan', 
+            LaserScan,
+            'scan',
             self.scan_callback,
             qos)
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def action_callback(self, msg):
-        self.goal_pose_x = msg.position.x
-        self.goal_pose_y = msg.position.y
+    def dqn_action_callback(self, msg):
+        self.goal_pose_x = msg[0].position.x
+        self.goal_pose_y = msg[0].position.y
 
     def goal_pose_callback(self, msg):
         self.goal_pose_x = msg.position.x
@@ -147,11 +146,11 @@ class DQNEnvironment():
             self.cmd_vel_pub.publish(Twist())  # robot stop
             print("Goal! :)")
             self.init_goal_distance = math.sqrt(
-                (self.goal_pose_x-self.last_pose_x)**2  
+                (self.goal_pose_x-self.last_pose_x)**2
                 + (self.goal_pose_y-self.last_pose_y)**2)
 
         state.append(self.done)
-        
+
         return state
 
     def reset(self):
@@ -168,7 +167,9 @@ class DQNEnvironment():
         reward = self.get_reward(action)
         done = self.done
 
-        return state, reward, done
+        dqn_step = Float32MultiArray()
+        dqn_step.data = [state, reward, done]
+        self.dqn_step_pub.publish(dqn_step)
 
     def get_reward(self, action):
         goal_distance = self.state[0]
@@ -191,7 +192,7 @@ class DQNEnvironment():
         # + for succeed, - for fail
         if self.succeed:
             reward += 1000
-        else if self.fail:
+        elif self.fail:
             reward -= 500
 
         return reward
@@ -221,3 +222,16 @@ class DQNEnvironment():
         yaw = numpy.arctan2(siny_cosp, cosy_cosp)
 
         return roll, pitch, yaw
+
+
+def main(argv=sys.argv[1:]):
+    rclpy.init(args=argv)
+    dqn_environment = DQNEnvironment()
+    rclpy.spin(dqn_environment)
+
+    dqn_environment.destroy()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

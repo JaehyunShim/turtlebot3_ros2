@@ -20,19 +20,21 @@ import rclpy
 from rclpy.qos import QoSProfile
 import sys
 
-from std_msgs.msg import Float32
 from std_msgs.msg import Float32MultiArray
-from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QGridLayout
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QProgressBar
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import QWaitCondition
 from PyQt5.QtCore import QMutex
 from PyQt5.QtCore import pyqtSignal
-from PyQt5 import QtCore
 
 
-class DQNActionGraph(QThread):
+class Thread(QThread):
     change_value1 = pyqtSignal(int)
     change_value2 = pyqtSignal(int)
     change_value3 = pyqtSignal(int)
@@ -54,8 +56,8 @@ class DQNActionGraph(QThread):
         qos = QoSProfile(depth=10)
 
         self.dqn_action_sub = rclpy.create_subscription(
-            Float32MultiArray, 
-            "dqn_action", 
+            Float32MultiArray,
+            "dqn_action",
             self.dqn_action_callback,
             qos)
 
@@ -89,12 +91,13 @@ class DQNActionGraph(QThread):
         self.change_value6.emit(str(round(self.array.data[-2], 2)))
         self.change_value7.emit(str(round(self.array.data[-1], 2)))
 
+
 class Form(QWidget):
     def __init__(self):
         QWidget.__init__(self, flags=Qt.Widget)
 
         self.pgsb1 = QProgressBar()
-        self.pgsb1.setOrientation(QtCore.Qt.Vertical)
+        self.pgsb1.setOrientation(Qt.Vertical)
         self.pgsb1.setValue(0)
         self.pgsb1.setRange(0, 100)
         self.pgsb1.setFormat(" ")
@@ -102,11 +105,11 @@ class Form(QWidget):
         self.pgsb2 = QProgressBar()
         self.pgsb2.setValue(0)
         self.pgsb2.setRange(0, 100)
-        self.pgsb2.setOrientation(QtCore.Qt.Vertical)
+        self.pgsb2.setOrientation(Qt.Vertical)
         self.pgsb2.setFormat(" ")
 
         self.pgsb3 = QProgressBar()
-        self.pgsb3.setOrientation(QtCore.Qt.Vertical)
+        self.pgsb3.setOrientation(Qt.Vertical)
         self.pgsb3.setValue(0)
         self.pgsb3.setRange(0, 100)
         self.pgsb3.setFormat(" ")
@@ -114,13 +117,13 @@ class Form(QWidget):
         self.pgsb4 = QProgressBar()
         self.pgsb4.setValue(0)
         self.pgsb4.setRange(0, 100)
-        self.pgsb4.setOrientation(QtCore.Qt.Vertical)
+        self.pgsb4.setOrientation(Qt.Vertical)
         self.pgsb4.setFormat(" ")
 
         self.pgsb5 = QProgressBar()
         self.pgsb5.setValue(0)
         self.pgsb5.setRange(0, 100)
-        self.pgsb5.setOrientation(QtCore.Qt.Vertical)
+        self.pgsb5.setOrientation(Qt.Vertical)
         self.pgsb5.setFormat(" ")
 
         self.label_front = QLabel("Front", self)
@@ -139,9 +142,9 @@ class Form(QWidget):
         self.reward = QLineEdit("  ", self)
         self.reward.setDisabled(True)
 
-        self.th = Thread()
+        self.thread = Thread()
         self.init_widget()
-        self.th.start()
+        self.thread.start()
 
     def init_widget(self):
         super(Form, self).__init__()
@@ -149,13 +152,13 @@ class Form(QWidget):
         self.setGeometry(0, 0, 200, 100)
         form_lbx = QGridLayout()
 
-        self.th.change_value1.connect(self.pgsb1.setValue)
-        self.th.change_value2.connect(self.pgsb2.setValue)
-        self.th.change_value3.connect(self.pgsb3.setValue)
-        self.th.change_value4.connect(self.pgsb4.setValue)
-        self.th.change_value5.connect(self.pgsb5.setValue)
-        self.th.change_value6.connect(self.total_reward.setText)
-        self.th.change_value7.connect(self.reward.setText)
+        self.thread.change_value1.connect(self.pgsb1.setValue)
+        self.thread.change_value2.connect(self.pgsb2.setValue)
+        self.thread.change_value3.connect(self.pgsb3.setValue)
+        self.thread.change_value4.connect(self.pgsb4.setValue)
+        self.thread.change_value5.connect(self.pgsb5.setValue)
+        self.thread.change_value6.connect(self.total_reward.setText)
+        self.thread.change_value7.connect(self.reward.setText)
 
         form_lbx.addWidget(self.pgsb1, 0, 4, 4, 1)
         form_lbx.addWidget(self.pgsb2, 0, 5, 4, 1)
@@ -185,7 +188,7 @@ def main(args=None):
 
     # action_graph = ActionGraph()
     # rclpy.spin(action_graph)
-    
+
     # action_graph.destroy()
     # rclpy.shutdown()
 

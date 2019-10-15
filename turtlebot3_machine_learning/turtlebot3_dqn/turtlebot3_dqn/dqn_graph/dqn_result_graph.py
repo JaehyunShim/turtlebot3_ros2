@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert
+# Authors: Ryan Shim, Gilbert
 
 import pickle
 import rclpy
@@ -22,8 +22,9 @@ from rclpy.qos import QoSProfile
 
 import sys
 from std_msgs.msg import Float32MultiArray
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtGui import QApplication
+from PyQt5.QtGui import QMainWindow
+from PyQt5.QtCore import pyqtgraph
 
 
 class Window(QMainWindow):
@@ -55,9 +56,9 @@ class Window(QMainWindow):
 
         # Initialise publishers
         self.dqn_result_sub = rclpy.create_subscription(
-            Float32MultiArray, 
-            'dqn_result', 
-            self.dqn_result_callback, 
+            Float32MultiArray,
+            'dqn_result',
+            self.dqn_result_callback,
             qos)
 
     """*******************************************************************************
@@ -98,7 +99,7 @@ class Window(QMainWindow):
         try:
             with open("graph.txt") as f:
                 x, y = pickle.load(f)
-        except:
+        except Exception:
             x, y = [], []
         return x, y
 
@@ -110,7 +111,6 @@ class Window(QMainWindow):
 def main(args=None):
     rclpy.init('graph')
     app = QApplication(sys.argv)
-    GUI = Window()
     sys.exit(app.exec_())
 
 
