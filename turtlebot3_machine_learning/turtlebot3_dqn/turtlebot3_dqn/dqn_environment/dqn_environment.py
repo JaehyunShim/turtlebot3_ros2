@@ -61,11 +61,11 @@ class DQNEnvironment(Node):
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
-        self.dqn_step_pub = self.create_publisher(Float32MultiArray, 'state', qos)
+        self.dqn_step_pub = self.create_publisher(Float32MultiArray, 'dqn_step', qos)
 
         # Initialise subscribers
         self.dqn_action_sub = self.create_subscription(
-            Float32MultiArray,
+            Float32,
             'dqn_action',
             self.dqn_action_callback,
             qos)

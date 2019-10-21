@@ -92,7 +92,7 @@ class DQNAgent(Node):
 
         # Initialise subscribers
         self.dqn_step_sub = self.create_subscription(
-            Float32MultiArray,
+            Float32,
             'dqn_step',
             self.dqn_step_callback,
             qos)
