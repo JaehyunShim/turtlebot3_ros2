@@ -17,10 +17,10 @@
 # Authors: Ryan Shim, Gilbert
 
 import copy
-from interactive_markers import InteractiveMarkerServer
 import numpy
-from rclpy.qos import QoSProfile
 
+from interactive_markers import InteractiveMarkerServer
+from rclpy.qos import QoSProfile
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Twist
 from visualization_msgs.msg import InteractiveMarker
