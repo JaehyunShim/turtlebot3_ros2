@@ -17,6 +17,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <exec_depend>turtlebot3_manipulation_controller</exec_depend>
   <exec_depend>turtlebot3_manipulation_description</exec_depend>
+  <exec_depend>turtlebot3_manipulation_teleop</exec_depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

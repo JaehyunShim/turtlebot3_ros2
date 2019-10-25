@@ -16,68 +16,57 @@
 
 /* Authors: Ryan Shim */
 
-#ifndef OPEN_MANIPULATOR_X_TELEOP_KEYBOARD_HPP_
-#define OPEN_MANIPULATOR_X_TELEOP_KEYBOARD_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-#include <termios.h>
-#include <sensor_msgs/msg/joy.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
+#ifndef TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_
+#define TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_
+
+#include <geometry_msgs/msg/twist.hpp>
 #include "open_manipulator_msgs/srv/set_joint_position.hpp"
 #include "open_manipulator_msgs/srv/set_kinematics_pose.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
 #define PI 3.14159265359
 #define NUM_OF_JOINT 4
 
-namespace open_manipulator_x_teleop_keyboard
+namespace turtlebot3_manipulation_teleop_joystick
 {
-class OpenManipulatorXTeleopKeyboard : public rclcpp::Node
+class TurtleBot3ManipulationTeleopJoystick : public rclcpp::Node
 {
  public:
-  OpenManipulatorXTeleopKeyboard();
-  virtual ~OpenManipulatorXTeleopKeyboard();
+  TurtleBot3ManipulationTeleopJoystick();
+  virtual ~TurtleBot3ManipulationTeleopJoystick();
 
  private:
   /*****************************************************************************
-  ** Position in Joint Space and Task Space
+  ** Position in joint space and task space
   *****************************************************************************/
   std::vector<double> present_joint_angle_;
   std::vector<double> present_kinematic_position_;
 
   /*****************************************************************************
-  ** ROS Subscribers, Callback Functions and Relevant Functions
+  ** ROS subscribers, callback functions and relevant functions
   *****************************************************************************/
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub_;
   rclcpp::Subscription<open_manipulator_msgs::msg::KinematicsPose>::SharedPtr kinematics_pose_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_command_sub_;
 
   void joint_states_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
   void kinematics_pose_callback(const open_manipulator_msgs::msg::KinematicsPose::SharedPtr msg);
+  void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
 
+  void set_goal(const char *str);
   bool set_joint_space_path(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time);
   bool set_task_space_path_from_present_position_only(std::vector<double> kinematics_pose, double path_time);
   bool set_tool_control(std::vector<double> joint_angle);
-  bool set_joint_space_path_from_present(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time);
 
   /*****************************************************************************
-  ** ROS Clients
+  ** ROS clients
   *****************************************************************************/
   rclcpp::Client<open_manipulator_msgs::srv::SetJointPosition>::SharedPtr goal_joint_space_path_client_;
   rclcpp::Client<open_manipulator_msgs::srv::SetJointPosition>::SharedPtr goal_tool_control_client_;
   rclcpp::Client<open_manipulator_msgs::srv::SetKinematicsPose>::SharedPtr goal_task_space_path_from_present_position_only_client_;
-  rclcpp::Client<open_manipulator_msgs::srv::SetJointPosition>::SharedPtr goal_joint_space_path_from_present_client_;
-
-  /*****************************************************************************
-  ** Others
-  *****************************************************************************/
-  void set_goal(char ch);
-  void print_text();
-  std::vector<double> get_present_joint_angle();
-  std::vector<double> get_present_kinematics_pose();
-  struct termios oldt_;
-  void restore_terminal_settings();
-  void disable_waiting_for_enter();
-  rclcpp::TimerBase::SharedPtr timer_;
-  void display_callback(); 
 };
-}  // namespace open_manipulator_x_teleop_keyboard
-#endif  // OPEN_MANIPULATOR_X_TELEOP_KEYBOARD_HPP_
+}  // namespace turtlebot3_manipulation_teleop_joystick
+#endif  // TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_

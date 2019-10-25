@@ -59,7 +59,7 @@ install(TARGETS ${EXEC_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY config launch maps rviz
+install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 

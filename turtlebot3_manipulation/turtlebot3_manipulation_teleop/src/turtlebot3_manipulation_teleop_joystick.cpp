@@ -16,14 +16,15 @@
 
 /* Authors: Ryan Shim */
 
-#include "open_manipulator_x_teleop/open_manipulator_x_teleop_joystick.hpp"
+
+#include "turtlebot3_manipulation_teleop/turtlebot3_manipulation_teleop_joystick.hpp"
 
 using namespace std::placeholders;
 
-namespace open_manipulator_x_teleop_joystick
+namespace turtlebot3_manipulation_teleop_joystick
 {
-OpenManipulatorXTeleopJoystick::OpenManipulatorXTeleopJoystick()
-: Node("open_manipulator_x_teleop_joystick")
+TurtleBot3ManipulationTeleopJoystick::TurtleBot3ManipulationTeleopJoystick()
+: Node("turtlebot3_manipulation_teleop_joystick")
 {
   /*****************************************************************************
   ** Initialise joint angle and kinematic position size 
@@ -32,36 +33,35 @@ OpenManipulatorXTeleopJoystick::OpenManipulatorXTeleopJoystick()
   present_kinematic_position_.resize(3);
 
   /*****************************************************************************
-  ** Initialise Subscribers
+  ** Initialise ROS subscribers and clients
   *****************************************************************************/
   auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
 
+  // Initialise subscribers
   joint_states_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
-    "open_manipulator_x/joint_states", qos, std::bind(&OpenManipulatorXTeleopJoystick::joint_states_callback, this, _1));
+    "open_manipulator_x/joint_states", qos, std::bind(&TurtleBot3ManipulationTeleopJoystick::joint_states_callback, this, _1));
   kinematics_pose_sub_ = this->create_subscription<open_manipulator_msgs::msg::KinematicsPose>(
-    "open_manipulator_x/kinematics_pose", qos, std::bind(&OpenManipulatorXTeleopJoystick::kinematics_pose_callback, this, _1));
+    "open_manipulator_x/kinematics_pose", qos, std::bind(&TurtleBot3ManipulationTeleopJoystick::kinematics_pose_callback, this, _1));
   joy_command_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-    "joy", qos, std::bind(&OpenManipulatorXTeleopJoystick::joy_callback, this, _1));
+    "joy", qos, std::bind(&TurtleBot3ManipulationTeleopJoystick::joy_callback, this, _1));
 
-  /*****************************************************************************
-  ** Initialise Clients
-  *****************************************************************************/
+  // Initialise clients
   goal_joint_space_path_client_ = this->create_client<open_manipulator_msgs::srv::SetJointPosition>("open_manipulator_x/goal_joint_space_path");
   goal_tool_control_client_ = this->create_client<open_manipulator_msgs::srv::SetJointPosition>("open_manipulator_x/goal_tool_control");
   goal_task_space_path_from_present_position_only_client_ = this->create_client<open_manipulator_msgs::srv::SetKinematicsPose>("open_manipulator_x/goal_task_space_path_from_present_position_only");
 
-  RCLCPP_INFO(this->get_logger(), "OpenManipulator-X Teleop Joystick Initialised");
+  RCLCPP_INFO(this->get_logger(), "TurtleBot3 manipulation teleop joystick node has been initialised.");
 }
 
-OpenManipulatorXTeleopJoystick::~OpenManipulatorXTeleopJoystick() 
+TurtleBot3ManipulationTeleopJoystick::~TurtleBot3ManipulationTeleopJoystick() 
 {
-  RCLCPP_INFO(this->get_logger(), "OpenManipulator-X Teleop Joystick Terminated");
+  RCLCPP_INFO(this->get_logger(), "TurtleBot3 manipulation teleop joystick node has been initialised.");
 }
 
 /*****************************************************************************
-** Callback Functions
+** Callback functions and relevant functions
 *****************************************************************************/
-void OpenManipulatorXTeleopJoystick::joint_states_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
+void TurtleBot3ManipulationTeleopJoystick::joint_states_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
 {
   std::vector<double> temp_angle;
   temp_angle.resize(NUM_OF_JOINT);
@@ -75,7 +75,7 @@ void OpenManipulatorXTeleopJoystick::joint_states_callback(const sensor_msgs::ms
   present_joint_angle_ = temp_angle;
 }
 
-void OpenManipulatorXTeleopJoystick::kinematics_pose_callback(const open_manipulator_msgs::msg::KinematicsPose::SharedPtr msg)
+void TurtleBot3ManipulationTeleopJoystick::kinematics_pose_callback(const open_manipulator_msgs::msg::KinematicsPose::SharedPtr msg)
 {
   std::vector<double> temp_position;
   temp_position.push_back(msg->pose.position.x);
@@ -84,7 +84,7 @@ void OpenManipulatorXTeleopJoystick::kinematics_pose_callback(const open_manipul
   present_kinematic_position_ = temp_position;
 }
 
-void OpenManipulatorXTeleopJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
+void TurtleBot3ManipulationTeleopJoystick::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
 {
   if (msg->axes.at(1) >= 0.9) set_goal("x+");
   else if (msg->axes.at(1) <= -0.9) set_goal("x-");
@@ -99,10 +99,7 @@ void OpenManipulatorXTeleopJoystick::joy_callback(const sensor_msgs::msg::Joy::S
   else if (msg->buttons.at(1) == 1) set_goal("gripper open");
 }
 
-/*****************************************************************************
-** Callback Functions and Relevant Functions
-*****************************************************************************/
-void OpenManipulatorXTeleopJoystick::set_goal(const char * str)
+void TurtleBot3ManipulationTeleopJoystick::set_goal(const char * str)
 {
   std::vector<double> goalPose; goalPose.resize(3);
   std::vector<double> goalJoint; goalJoint.resize(4);
@@ -185,7 +182,7 @@ void OpenManipulatorXTeleopJoystick::set_goal(const char * str)
   }
 }
 
-bool OpenManipulatorXTeleopJoystick::set_joint_space_path(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time)
+bool TurtleBot3ManipulationTeleopJoystick::set_joint_space_path(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time)
 {
   auto request = std::make_shared<open_manipulator_msgs::srv::SetJointPosition::Request>();
   request->joint_position.joint_name = joint_name;
@@ -203,7 +200,7 @@ bool OpenManipulatorXTeleopJoystick::set_joint_space_path(std::vector<std::strin
   return false;
 }
 
-bool OpenManipulatorXTeleopJoystick::set_tool_control(std::vector<double> joint_angle)
+bool TurtleBot3ManipulationTeleopJoystick::set_tool_control(std::vector<double> joint_angle)
 {
   auto request = std::make_shared<open_manipulator_msgs::srv::SetJointPosition::Request>();
   request->joint_position.joint_name.push_back("gripper");
@@ -220,7 +217,7 @@ bool OpenManipulatorXTeleopJoystick::set_tool_control(std::vector<double> joint_
   return false;
 }
 
-bool OpenManipulatorXTeleopJoystick::set_task_space_path_from_present_position_only(std::vector<double> kinematics_pose, double path_time)
+bool TurtleBot3ManipulationTeleopJoystick::set_task_space_path_from_present_position_only(std::vector<double> kinematics_pose, double path_time)
 {
   auto request = std::make_shared<open_manipulator_msgs::srv::SetKinematicsPose::Request>();
   request->planning_group = "gripper";
@@ -239,7 +236,7 @@ bool OpenManipulatorXTeleopJoystick::set_task_space_path_from_present_position_o
 
   return false;
 }
-}  // namespace open_manipulator_x_teleop_joystick
+}  // namespace turtlebot3_manipulation_teleop_joystick
 
 /*****************************************************************************
 ** Main
@@ -247,7 +244,7 @@ bool OpenManipulatorXTeleopJoystick::set_task_space_path_from_present_position_o
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<open_manipulator_x_teleop_joystick::OpenManipulatorXTeleopJoystick>());
+  rclcpp::spin(std::make_shared<turtlebot3_manipulation_teleop_joystick::TurtleBot3ManipulationTeleopJoystick>());
   rclcpp::shutdown();
 
   return 0;
