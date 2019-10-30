@@ -13,6 +13,25 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ################################################################################
+# Build
+################################################################################
+include_directories(
+  include
+)
+
+set(dependencies
+  "geometry_msgs"
+  "nav_msgs"
+  "rclcpp"
+  "sensor_msgs"
+)
+
+set(EXEC_NAME "turtlebot3_drive_node")
+
+add_executable(${EXEC_NAME} src/turtlebot3_drive_node.cpp)
+ament_target_dependencies(${EXEC_NAME} ${dependencies})
+
+################################################################################
 # Find ament packages and libraries for ament and system dependencies
 ################################################################################
 find_package(ament_cmake REQUIRED)
