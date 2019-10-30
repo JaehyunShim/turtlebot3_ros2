@@ -161,8 +161,6 @@ void Turtlebot3Drive::update_callback()
       turtlebot3_state_num = GET_TB3_DIRECTION;
       break;
   }
-
-  return true;
 }
 
 /*******************************************************************************
