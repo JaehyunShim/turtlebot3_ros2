@@ -16,19 +16,20 @@
 
 /* Authors: Ryan Shim */
 
-
 #ifndef TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_
 #define TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_
 
 #include <geometry_msgs/msg/twist.hpp>
-#include "open_manipulator_msgs/srv/set_joint_position.hpp"
-#include "open_manipulator_msgs/srv/set_kinematics_pose.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 
+#include "open_manipulator_msgs/srv/set_joint_position.hpp"
+#include "open_manipulator_msgs/srv/set_kinematics_pose.hpp"
+
 #define PI 3.14159265359
 #define NUM_OF_JOINT 4
+
 
 namespace turtlebot3_manipulation_teleop_joystick
 {
@@ -42,12 +43,15 @@ class TurtleBot3ManipulationTeleopJoystick : public rclcpp::Node
   /*****************************************************************************
   ** Position in joint space and task space
   *****************************************************************************/
+  geometry_msgs::msg::Twist present_base_velocity_;
   std::vector<double> present_joint_angle_;
   std::vector<double> present_kinematic_position_;
 
   /*****************************************************************************
   ** ROS subscribers, callback functions and relevant functions
   *****************************************************************************/
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
+
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub_;
   rclcpp::Subscription<open_manipulator_msgs::msg::KinematicsPose>::SharedPtr kinematics_pose_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_command_sub_;

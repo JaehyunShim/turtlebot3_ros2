@@ -16,7 +16,6 @@
 
 /* Authors: Ryan Shim */
 
-
 #ifndef TURTLEBOT3_MANIPULATION_TELEOP_KEYBOARD_HPP_
 #define TURTLEBOT3_MANIPULATION_TELEOP_KEYBOARD_HPP_
 
@@ -24,14 +23,16 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include "open_manipulator_msgs/srv/set_joint_position.hpp"
-#include "open_manipulator_msgs/srv/set_kinematics_pose.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
+#include "open_manipulator_msgs/srv/set_joint_position.hpp"
+#include "open_manipulator_msgs/srv/set_kinematics_pose.hpp"
+
 #define PI 3.14159265359
 #define NUM_OF_JOINT 4
+
 
 namespace turtlebot3_manipulation_teleop_keyboard
 {

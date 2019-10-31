@@ -16,10 +16,10 @@
 
 /* Authors: Ryan Shim */
 
-
 #include "turtlebot3_manipulation_teleop/turtlebot3_manipulation_teleop_joystick.hpp"
 
 using namespace std::placeholders;
+
 
 namespace turtlebot3_manipulation_teleop_joystick
 {
@@ -33,9 +33,12 @@ TurtleBot3ManipulationTeleopJoystick::TurtleBot3ManipulationTeleopJoystick()
   present_kinematic_position_.resize(3);
 
   /*****************************************************************************
-  ** Initialise ROS subscribers and clients
+  ** Initialise ROS publishers, subscribers and clients
   *****************************************************************************/
   auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
+
+  // Initialise publishers
+  cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", qos);
 
   // Initialise subscribers
   joint_states_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -94,6 +97,8 @@ void TurtleBot3ManipulationTeleopJoystick::joy_callback(const sensor_msgs::msg::
   else if (msg->buttons.at(0) == 1) set_goal("z-");
   else if (msg->buttons.at(5) == 1) set_goal("home");
   else if (msg->buttons.at(4) == 1) set_goal("init");
+  else if (msg->axes.at(3) >=  0.9) set_goal("y+");
+  else if (msg->axes.at(3) <= -0.9) set_goal("y-");
 
   if (msg->buttons.at(2) == 1) set_goal("gripper close");
   else if (msg->buttons.at(1) == 1) set_goal("gripper open");

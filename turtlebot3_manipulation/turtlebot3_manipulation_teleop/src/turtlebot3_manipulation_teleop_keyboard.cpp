@@ -16,11 +16,11 @@
 
 /* Authors: Ryan Shim */
 
-
 #include "turtlebot3_manipulation_teleop/turtlebot3_manipulation_teleop_keyboard.hpp"
 
 using namespace std::placeholders;
 using namespace std::chrono_literals;
+
 
 namespace turtlebot3_manipulation_teleop_keyboard
 {
@@ -76,7 +76,7 @@ TurtleBot3ManipulationTeleopKeyboard::~TurtleBot3ManipulationTeleopKeyboard()
 ********************************************************************************/
 void TurtleBot3ManipulationTeleopKeyboard::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
-  present_base_velocity_ = msg->twist;
+  present_base_velocity_ = msg->twist.twist;
 }
 
 void TurtleBot3ManipulationTeleopKeyboard::joint_states_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
@@ -115,28 +115,28 @@ void TurtleBot3ManipulationTeleopKeyboard::set_goal(char ch)
   {
     // Move forward
     goal_base_velocity = get_present_base_velocity();
-    goal_base_velocity.linear.x += 0.001;
+    goal_base_velocity.linear.x += 0.05;
     set_base_velocity(goal_base_velocity);
   }
   else if (ch == '2')
   {
     // Move backward
     goal_base_velocity = get_present_base_velocity();
-    goal_base_velocity.linear.x -= 0.001;
+    goal_base_velocity.linear.x -= 0.05;
     set_base_velocity(goal_base_velocity);
   }
   if (ch == '4')
   {
     // Rotate clockwise
     goal_base_velocity = get_present_base_velocity();
-    goal_base_velocity.angular.z += 0.001;
+    goal_base_velocity.angular.z += 0.05;
     set_base_velocity(goal_base_velocity);
   }
   else if (ch == '6')
   {
     // Rotate counter-clockwise
     goal_base_velocity = get_present_base_velocity();
-    goal_base_velocity.linear.z -= 0.001;
+    goal_base_velocity.angular.z -= 0.05;
     set_base_velocity(goal_base_velocity);
   }
   else if (ch == '5')
@@ -310,7 +310,7 @@ void TurtleBot3ManipulationTeleopKeyboard::set_goal(char ch)
 
 bool TurtleBot3ManipulationTeleopKeyboard::set_base_velocity(geometry_msgs::msg::Twist base_velocity)
 {
-  cmd_vel_pub_.publish(base_velocity);
+  cmd_vel_pub_->publish(base_velocity);
 
   return false;
 }
