@@ -20,6 +20,7 @@
   <depend>nav_msgs</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
   <depend>turtlebot3</depend>
   <export>
     <build_type>ament_cmake</build_type>

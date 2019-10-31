@@ -16,7 +16,7 @@
 
 /* Authors: Taehun Lim (Darby), Ryan Shim */
 
-#include "turtlebot3_gazebo2/turtlebot3_drive.hpp"
+#include "turtlebot3_gazebo2/turtlebot3_drive_node.hpp"
 
 using namespace std::chrono_literals;
 
@@ -26,16 +26,12 @@ Turtlebot3Drive::Turtlebot3Drive()
   /************************************************************
   ** Initialise variables
   ************************************************************/
-  escape_range_ = 30.0 * DEG2RAD;
-  check_forward_dist_ = 0.7;
-  check_side_dist_ = 0.6;
-
   scan_data_[0] = 0.0;
   scan_data_[1] = 0.0;
   scan_data_[2] = 0.0;
 
-  tb3_pose_ = 0.0;
-  prev_tb3_pose_ = 0.0;
+  robot_pose_ = 0.0;
+  prev_robot_pose_ = 0.0;
 
   /************************************************************
   ** Initialise ROS publishers and subscribers
@@ -47,12 +43,12 @@ Turtlebot3Drive::Turtlebot3Drive()
 
   // Initialise subscribers
   scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-    "scan", qos, std::bind(&Turtlebot3Drive::scan_callback, this, std::placeholders::_1));
+    "scan", rclcpp::SensorDataQoS(), std::bind(&Turtlebot3Drive::scan_callback, this, std::placeholders::_1));
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", qos, std::bind(&Turtlebot3Drive::odom_callback, this, std::placeholders::_1));
 
   /************************************************************
-  ** initialise ROS timers
+  ** Initialise ROS timers
   ************************************************************/
   update_timer_ = this->create_wall_timer(10ms, std::bind(&Turtlebot3Drive::update_callback, this));
 
@@ -61,22 +57,27 @@ Turtlebot3Drive::Turtlebot3Drive()
 
 Turtlebot3Drive::~Turtlebot3Drive()
 {
-  update_cmd_vel(0.0, 0.0);
   RCLCPP_INFO(this->get_logger(), "Turtlebot3 simulation node has been terminated");
 }
 
 /********************************************************************************
 ** Callback functions for ROS subscribers
 ********************************************************************************/
-void Turtlebot3Drive::odom_callback(const nav_msgs::Odometry::SharedPtr msg)
+void Turtlebot3Drive::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
-  double siny = 2.0 * (msg->pose.pose.orientation.w * msg->pose.pose.orientation.z + msg->pose.pose.orientation.x * msg->pose.pose.orientation.y);
-	double cosy = 1.0 - 2.0 * (msg->pose.pose.orientation.y * msg->pose.pose.orientation.y + msg->pose.pose.orientation.z * msg->pose.pose.orientation.z);  
+  tf2::Quaternion q(
+        msg->pose.pose.orientation.x,
+        msg->pose.pose.orientation.y,
+        msg->pose.pose.orientation.z,
+        msg->pose.pose.orientation.w);
+  tf2::Matrix3x3 m(q);
+  double roll, pitch, yaw;
+  m.getRPY(roll, pitch, yaw);
 
-	tb3_pose_ = atan2(siny, cosy);
+  robot_pose_ = yaw;
 }
 
-void Turtlebot3Drive::scan_callback(const sensor_msgs::LaserScan::SharedPtr msg)
+void Turtlebot3Drive::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg)
 {
   uint16_t scan_angle[3] = {0, 30, 330};
 
@@ -96,11 +97,10 @@ void Turtlebot3Drive::scan_callback(const sensor_msgs::LaserScan::SharedPtr msg)
 void Turtlebot3Drive::update_cmd_vel(double linear, double angular)
 {
   geometry_msgs::msg::Twist cmd_vel;
-
   cmd_vel.linear.x  = linear;
   cmd_vel.angular.z = angular;
 
-  cmd_vel_pub_.publish(cmd_vel);
+  cmd_vel_pub_->publish(cmd_vel);
 }
 
 /********************************************************************************
@@ -109,20 +109,23 @@ void Turtlebot3Drive::update_cmd_vel(double linear, double angular)
 void Turtlebot3Drive::update_callback()
 {
   static uint8_t turtlebot3_state_num = 0;
+  double escape_range = 30.0 * DEG2RAD;
+  double check_forward_dist = 0.7;
+  double check_side_dist = 0.6;
 
   switch (turtlebot3_state_num)
   {
     case GET_TB3_DIRECTION:
-      if (scan_data_[CENTER] > check_forward_dist_)
+      if (scan_data_[CENTER] > check_forward_dist)
       {
-        if (scan_data_[LEFT] < check_side_dist_)
+        if (scan_data_[LEFT] < check_side_dist)
         {
-          prev_tb3_pose_ = tb3_pose_;
+          prev_robot_pose_ = robot_pose_;
           turtlebot3_state_num = TB3_RIGHT_TURN;
         }
-        else if (scan_data_[RIGHT] < check_side_dist_)
+        else if (scan_data_[RIGHT] < check_side_dist)
         {
-          prev_tb3_pose_ = tb3_pose_;
+          prev_robot_pose_ = robot_pose_;
           turtlebot3_state_num = TB3_LEFT_TURN;
         }
         else
@@ -131,9 +134,9 @@ void Turtlebot3Drive::update_callback()
         }
       }
 
-      if (scan_data_[CENTER] < check_forward_dist_)
+      if (scan_data_[CENTER] < check_forward_dist)
       {
-        prev_tb3_pose_ = tb3_pose_;
+        prev_robot_pose_ = robot_pose_;
         turtlebot3_state_num = TB3_RIGHT_TURN;
       }
       break;
@@ -144,14 +147,14 @@ void Turtlebot3Drive::update_callback()
       break;
 
     case TB3_RIGHT_TURN:
-      if (fabs(prev_tb3_pose_ - tb3_pose_) >= escape_range_)
+      if (fabs(prev_robot_pose_ - robot_pose_) >= escape_range)
         turtlebot3_state_num = GET_TB3_DIRECTION;
       else
         update_cmd_vel(0.0, -1 * ANGULAR_VELOCITY);
       break;
 
     case TB3_LEFT_TURN:
-      if (fabs(prev_tb3_pose_ - tb3_pose_) >= escape_range_)
+      if (fabs(prev_robot_pose_ - robot_pose_) >= escape_range)
         turtlebot3_state_num = GET_TB3_DIRECTION;
       else
         update_cmd_vel(0.0, ANGULAR_VELOCITY);
