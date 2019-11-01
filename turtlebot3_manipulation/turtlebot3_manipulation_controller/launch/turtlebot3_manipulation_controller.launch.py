@@ -14,7 +14,6 @@
 
 # Author: Ryan Shim
 
-
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -25,8 +24,9 @@ from launch.actions import LogInfo
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+
 def generate_launch_description():
-    usb_port = LaunchConfiguration('usb_port', default='/dev/ttyUSB0')
+    usb_port = LaunchConfiguration('usb_port', default='/dev/ttyACM0')
     baud_rate = LaunchConfiguration('baud_rate', default=1000000)
     param_dir = LaunchConfiguration(
         'param_dir',
@@ -39,7 +39,7 @@ def generate_launch_description():
         default=os.path.join(get_package_share_directory('turtlebot3_bringup'), 'launch'))
 
     return LaunchDescription([
-        LogInfo(msg=['Execute OpenManipulator-X Controller!!']),
+        LogInfo(msg=['Execute TurtleBot3 Manipulation Controller!!']),
 
         DeclareLaunchArgument(
             'param_dir',
@@ -49,7 +49,7 @@ def generate_launch_description():
         Node(
             package='open_manipulator_x_controller',
             node_executable='open_manipulator_x_controller',
-            # node_name='om_x_controller',
+            node_name='open_manipulator_x_controller',
             parameters=[param_dir],
             arguments=['-d', usb_port, baud_rate],
             output='screen'),
