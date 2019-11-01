@@ -42,7 +42,6 @@ TurtleBot3ManipulationTeleopKeyboard::TurtleBot3ManipulationTeleopKeyboard()
   cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", qos);
 
   // Initialise subscribers
-
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", qos, std::bind(&TurtleBot3ManipulationTeleopKeyboard::odom_callback, this, _1));
   joint_states_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -113,28 +112,28 @@ void TurtleBot3ManipulationTeleopKeyboard::set_goal(char ch)
 
   if (ch == '8')
   {
-    // Move forward
+    // base linear velocity +
     goal_base_velocity = get_present_base_velocity();
     goal_base_velocity.linear.x += 0.05;
     set_base_velocity(goal_base_velocity);
   }
   else if (ch == '2')
   {
-    // Move backward
+    // base linear velocity -
     goal_base_velocity = get_present_base_velocity();
     goal_base_velocity.linear.x -= 0.05;
     set_base_velocity(goal_base_velocity);
   }
   if (ch == '4')
   {
-    // Rotate clockwise
+    // base angular velocity +
     goal_base_velocity = get_present_base_velocity();
     goal_base_velocity.angular.z += 0.05;
     set_base_velocity(goal_base_velocity);
   }
   else if (ch == '6')
   {
-    // Rotate counter-clockwise
+    // base angular velocity -
     goal_base_velocity = get_present_base_velocity();
     goal_base_velocity.angular.z -= 0.05;
     set_base_velocity(goal_base_velocity);
@@ -220,7 +219,6 @@ void TurtleBot3ManipulationTeleopKeyboard::set_goal(char ch)
     joint_name.push_back("joint4");
     set_joint_space_path_from_present(joint_name, goal_joint, path_time);
   }
-
   else if (ch == 'i' || ch == 'I')
   {
     // printf("input : i \tincrease(++) joint 3 angle\n");
@@ -241,7 +239,6 @@ void TurtleBot3ManipulationTeleopKeyboard::set_goal(char ch)
     joint_name.push_back("joint4");
     set_joint_space_path_from_present(joint_name, goal_joint, path_time);
   }
-
   else if (ch == 'o' || ch == 'O')
   {
     // printf("input : o \tincrease(++) joint 4 angle\n");

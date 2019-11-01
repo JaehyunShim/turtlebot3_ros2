@@ -20,6 +20,7 @@
 #define TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_
 
 #include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <sensor_msgs/msg/joy.hpp>
@@ -52,15 +53,17 @@ class TurtleBot3ManipulationTeleopJoystick : public rclcpp::Node
   *****************************************************************************/
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
 
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub_;
   rclcpp::Subscription<open_manipulator_msgs::msg::KinematicsPose>::SharedPtr kinematics_pose_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_command_sub_;
 
+  void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void joint_states_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
   void kinematics_pose_callback(const open_manipulator_msgs::msg::KinematicsPose::SharedPtr msg);
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
 
-  void set_goal(const char *str);
+  bool set_base_velocity(geometry_msgs::msg::Twist base_velocity);
   bool set_joint_space_path(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time);
   bool set_task_space_path_from_present_position_only(std::vector<double> kinematics_pose, double path_time);
   bool set_tool_control(std::vector<double> joint_angle);
@@ -71,6 +74,13 @@ class TurtleBot3ManipulationTeleopJoystick : public rclcpp::Node
   rclcpp::Client<open_manipulator_msgs::srv::SetJointPosition>::SharedPtr goal_joint_space_path_client_;
   rclcpp::Client<open_manipulator_msgs::srv::SetJointPosition>::SharedPtr goal_tool_control_client_;
   rclcpp::Client<open_manipulator_msgs::srv::SetKinematicsPose>::SharedPtr goal_task_space_path_from_present_position_only_client_;
+
+  /*****************************************************************************
+  ** Others
+  *****************************************************************************/
+  void set_goal(const char *str);
+  geometry_msgs::msg::Twist get_present_base_velocity();
+
 };
 }  // namespace turtlebot3_manipulation_teleop_joystick
 #endif  // TURTLEBOT3_MANIPULATION_TELEOP_JOYSTICK_HPP_

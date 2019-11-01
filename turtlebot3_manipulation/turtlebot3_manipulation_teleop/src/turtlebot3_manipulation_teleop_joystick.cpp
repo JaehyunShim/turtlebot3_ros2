@@ -41,6 +41,8 @@ TurtleBot3ManipulationTeleopJoystick::TurtleBot3ManipulationTeleopJoystick()
   cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", qos);
 
   // Initialise subscribers
+  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "odom", qos, std::bind(&TurtleBot3ManipulationTeleopJoystick::odom_callback, this, _1));
   joint_states_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
     "open_manipulator_x/joint_states", qos, std::bind(&TurtleBot3ManipulationTeleopJoystick::joint_states_callback, this, _1));
   kinematics_pose_sub_ = this->create_subscription<open_manipulator_msgs::msg::KinematicsPose>(
@@ -64,6 +66,11 @@ TurtleBot3ManipulationTeleopJoystick::~TurtleBot3ManipulationTeleopJoystick()
 /*****************************************************************************
 ** Callback functions and relevant functions
 *****************************************************************************/
+void TurtleBot3ManipulationTeleopJoystick::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+{
+  present_base_velocity_ = msg->twist.twist;
+}
+
 void TurtleBot3ManipulationTeleopJoystick::joint_states_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
 {
   std::vector<double> temp_angle;
@@ -97,8 +104,11 @@ void TurtleBot3ManipulationTeleopJoystick::joy_callback(const sensor_msgs::msg::
   else if (msg->buttons.at(0) == 1) set_goal("z-");
   else if (msg->buttons.at(5) == 1) set_goal("home");
   else if (msg->buttons.at(4) == 1) set_goal("init");
-  else if (msg->axes.at(3) >=  0.9) set_goal("y+");
-  else if (msg->axes.at(3) <= -0.9) set_goal("y-");
+  else if (msg->axes.at(4) >=  0.9) set_goal("base_linear+");
+  else if (msg->axes.at(4) <= -0.9) set_goal("base_linear-");
+  else if (msg->axes.at(3) >=  0.9) set_goal("base_angular+");
+  else if (msg->axes.at(3) <= -0.9) set_goal("base_angular-");
+  else if (msg->axes.at(2) == -1) set_goal("base_stop");
 
   if (msg->buttons.at(2) == 1) set_goal("gripper close");
   else if (msg->buttons.at(1) == 1) set_goal("gripper open");
@@ -106,12 +116,46 @@ void TurtleBot3ManipulationTeleopJoystick::joy_callback(const sensor_msgs::msg::
 
 void TurtleBot3ManipulationTeleopJoystick::set_goal(const char * str)
 {
+  geometry_msgs::msg::Twist goal_base_velocity;
   std::vector<double> goalPose; goalPose.resize(3);
   std::vector<double> goalJoint; goalJoint.resize(4);
   const double delta = 0.01;
   double path_time = 0.5;
 
-  if (!strcmp(str, "x+"))
+  if (!strcmp(str, "base_linear+"))
+  {
+    printf("base linear velocity +\n");
+    goal_base_velocity = get_present_base_velocity();
+    goal_base_velocity.linear.x += 0.05;
+    set_base_velocity(goal_base_velocity);
+  }
+  else if (!strcmp(str, "base_linear-"))
+  {
+    printf("base linear velocity +\n");
+    goal_base_velocity = get_present_base_velocity();
+    goal_base_velocity.linear.x -= 0.05;
+    set_base_velocity(goal_base_velocity);
+  }
+  else if (!strcmp(str, "base_angular+"))
+  {
+    printf("base angular velocity +\n");
+    goal_base_velocity = get_present_base_velocity();
+    goal_base_velocity.angular.z += 0.05;
+    set_base_velocity(goal_base_velocity);
+  }
+  else if (!strcmp(str, "base_angular-"))
+  {
+    printf("base angular velocity +\n");
+    goal_base_velocity = get_present_base_velocity();
+    goal_base_velocity.angular.z -= 0.05;
+    set_base_velocity(goal_base_velocity);
+  }
+  else if (!strcmp(str, "base_stop"))
+  {
+    printf("base stop +\n");
+    set_base_velocity(goal_base_velocity);
+  }
+  else if (!strcmp(str, "x+"))
   {
     printf("increase(++) x axis in cartesian space\n");
     goalPose.at(0) = delta;
@@ -185,6 +229,18 @@ void TurtleBot3ManipulationTeleopJoystick::set_goal(const char * str)
     joint_name.push_back("joint4"); joint_angle.push_back(0.0);
     set_joint_space_path(joint_name, joint_angle, path_time);
   }
+}
+
+geometry_msgs::msg::Twist TurtleBot3ManipulationTeleopJoystick::get_present_base_velocity()
+{
+  return present_base_velocity_;
+}
+
+bool TurtleBot3ManipulationTeleopJoystick::set_base_velocity(geometry_msgs::msg::Twist base_velocity)
+{
+  cmd_vel_pub_->publish(base_velocity);
+
+  return false;
 }
 
 bool TurtleBot3ManipulationTeleopJoystick::set_joint_space_path(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time)
