@@ -14,7 +14,6 @@
 
 # Author: Ryan Shim
 
-
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -22,8 +21,8 @@ from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-def generate_launch_description():
 
+def generate_launch_description():
     # Parameters
     robot_name = LaunchConfiguration('robot_name', default='turtlebot3_manipulation')  
     use_gui    = LaunchConfiguration('use_gui',    default='False')  

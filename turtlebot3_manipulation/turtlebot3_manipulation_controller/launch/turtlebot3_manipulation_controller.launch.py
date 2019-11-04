@@ -26,7 +26,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    usb_port = LaunchConfiguration('usb_port', default='/dev/ttyACM0')
+    usb_port = LaunchConfiguration('usb_port', default='/dev/ttyUSB0')
     baud_rate = LaunchConfiguration('baud_rate', default=1000000)
     param_dir = LaunchConfiguration(
         'param_dir',
