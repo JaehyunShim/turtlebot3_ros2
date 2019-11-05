@@ -18,16 +18,16 @@
 
 import rclpy
 
-from turtlebot3_example.turtlebot3_obstacle_detection.turtlebot3_obstacle_detection \
-    import Turtlebot3ObstacleDetection
+from turtlebot3_automatic_parking.turtlebot3_automatic_parking.turtlebot3_automatic_parking \
+    import Turtlebot3AutomaticParking
 
 
 def main(args=None):
     rclpy.init(args=args)
-    turtlebot3_obstacle_detection = Turtlebot3ObstacleDetection()
-    rclpy.spin(turtlebot3_obstacle_detection)
+    turtlebot3_automatic_parking = Turtlebot3AutomaticParking()
+    rclpy.spin(turtlebot3_automatic_parking)
 
-    turtlebot3_obstacle_detection.destroy_node()
+    turtlebot3_automatic_parking.destroy_node()
     rclpy.shutdown()
 
 

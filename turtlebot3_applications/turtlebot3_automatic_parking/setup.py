@@ -13,9 +13,8 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # To be added
-        # ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_interactive_marker.launch.py'))),
-        # ('share/' + package_name + '/rviz', glob.glob(os.path.join('rviz', 'turtlebot3_interactive_marker.rviz'))),
+        ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_automatic_parking.launch.py'))),
+        ('share/' + package_name + '/rviz', glob.glob(os.path.join('rviz', 'turtlebot3_automatic_parking.rviz'))),
     ],
     install_requires=['setuptools','launch'],
     zip_safe=True,
@@ -31,13 +30,12 @@ setup(
         'Topic :: Software Development',
     ],
     description=(
-        'Examples of Different TurtleBot3 Usage.'
+        'ROS 2 pacakge for turtlebot3_automatic_parking.'
     ),
     license='Apache License, Version 2.0',
     entry_points={
         'console_scripts': [
-            # 'turtlebot3_patrol_server = turtlebot3_example.turtlebot3_patrol_server.main:main',
-            'turtlebot3_position_control = turtlebot3_example.turtlebot3_position_control.main:main',
+            'turtlebot3_automatic_parking = turtlebot3_automatic_parking.turtlebot3_automatic_parking.main:main',
         ],
     },
 )
