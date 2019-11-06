@@ -108,7 +108,7 @@ class Turtlebot3AutomaticParking(Node):
         # Step 0: Turn
         if self.step == 0:
             if scan_done == True:
-                fining_spot, start_point, center_point, end_point = find_spot_position(center_angle, start_angle, end_angle)
+                fining_spot, start_point, center_point, end_point = self.find_spot_position(center_angle, start_angle, end_angle)
                 if fining_spot == True:
                     theta = numpy.arctan2(start_point[1] - end_point[1], start_point[0] - end_point[0])
                     print("=================================")
@@ -140,7 +140,7 @@ class Turtlebot3AutomaticParking(Node):
                     time.sleep(1)
                     reset_pub.publish(reset)
                     time.sleep(3)
-                    rotation_point = rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
+                    rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
                     self.step = 2
             else:
                 if theta - init_yaw < -0.1:
@@ -153,7 +153,7 @@ class Turtlebot3AutomaticParking(Node):
                     time.sleep(1)
                     reset_pub.publish(reset)
                     time.sleep(3)
-                    rotation_point = rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
+                    rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
                     self.step = 2
 
         # Step 2: Turn
@@ -263,15 +263,15 @@ class Turtlebot3AutomaticParking(Node):
     def find_spot_position(self, center_angle, start_angle, end_angle):
         print("scan parking spot done!")
         fining_spot = False
-        start_angle_distance = get_angle_distance(start_angle)
-        center_angle_distance = get_angle_distance(center_angle)
-        end_angle_distance = get_angle_distance(end_angle)
+        start_angle_distance = self.get_angle_distance(start_angle)
+        center_angle_distance = self.get_angle_distance(center_angle)
+        end_angle_distance = self.get_angle_distance(end_angle)
 
         if start_angle_distance[1] != 0 and center_angle_distance[1] != 0 and end_angle_distance[1] != 0:
             print("calibration......")
-            start_point = get_point(start_angle_distance)
-            center_point = get_point(center_angle_distance)
-            end_point = get_point(end_angle_distance)
+            start_point = self.get_point(start_angle_distance)
+            center_point = self.get_point(center_angle_distance)
+            end_point = self.get_point(end_angle_distance)
             fining_spot = True
         else:
             fining_spot = False
