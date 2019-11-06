@@ -47,6 +47,7 @@ class Turtlebot3AutomaticParking(Node):
         self.step = 0
         self.scan = []
         self.rotation_point = []
+        self.center_point = []
         self.theta = 0.0
         self.yaw = 0.0
         self.get_key_state = False
@@ -108,17 +109,18 @@ class Turtlebot3AutomaticParking(Node):
     def park_turtlebot3(self):
         scan_done, center_angle, start_angle, end_angle = self.scan_parking_spot()
         twist = Twist()
+        reset = Empty()
 
         # Step 0: Turn
         if self.step == 0:
             if scan_done == True:
-                fining_spot, start_point, center_point, end_point = self.find_spot_position(center_angle, start_angle, end_angle)
+                fining_spot, start_point, self.center_point, end_point = self.find_spot_position(center_angle, start_angle, end_angle)
                 if fining_spot == True:
                     self.theta = numpy.arctan2(start_point[1] - end_point[1], start_point[0] - end_point[0])
                     print("=================================")
                     print("|        |     x     |     y     |")
                     print('| start  | {0:>10.3f}| {1:>10.3f}|'.format(start_point[0], start_point[1]))
-                    print('| center | {0:>10.3f}| {1:>10.3f}|'.format(center_point[0], center_point[1]))
+                    print('| center | {0:>10.3f}| {1:>10.3f}|'.format(self.center_point[0], self.center_point[1]))
                     print('| end    | {0:>10.3f}| {1:>10.3f}|'.format(end_point[0], end_point[1]))
                     print("=================================")
                     print('| theta  | {0:.2f} deg'.format(numpy.rad2deg(self.theta)))
@@ -144,7 +146,7 @@ class Turtlebot3AutomaticParking(Node):
                     time.sleep(1)
                     self.reset_pub.publish(reset)
                     time.sleep(3)
-                    self.rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
+                    self.rotation_point = self.rotate_origin_only(self.center_point[0], self.center_point[1], -(math.pi / 2 - init_yaw))
                     self.step = 2
             else:
                 if self.theta - init_yaw < -0.1:
@@ -157,7 +159,7 @@ class Turtlebot3AutomaticParking(Node):
                     time.sleep(1)
                     self.reset_pub.publish(reset)
                     time.sleep(3)
-                    self.rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
+                    self.rotation_point = self.rotate_origin_only(self.center_point[0], self.center_point[1], -(math.pi / 2 - init_yaw))
                     self.step = 2
 
         # Step 2: Turn
