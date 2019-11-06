@@ -16,24 +16,20 @@
 #
 # Authors: Ryan Shim
 
-import os
+import rclpy
 
-from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription
-from launch_ros.actions import Node
+from turtlebot3_follower.turtlebot3_follower.turtlebot3_follower \
+    import TurtleBot3Follower
 
 
-def generate_launch_description():
-    param_file = os.path.join(get_package_share_directory(
-        'turtlebot3_follower'),
-        'config',
-        'turtlebot3_follower_filter.yaml')
+def main(args=None):
+    rclpy.init(args=args)
+    turtlebot3_follower = TurtleBot3Follower()
+    rclpy.spin(turtlebot3_follower)
 
-    return LaunchDescription([
-        Node(
-            package='laser_filters',
-            node_executable='scan_to_scan_filter_chain',
-            node_name='scan_to_scan_filter_chain',
-            output='screen'
-              param=''),
-    ])
+    turtlebot3_follower.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
