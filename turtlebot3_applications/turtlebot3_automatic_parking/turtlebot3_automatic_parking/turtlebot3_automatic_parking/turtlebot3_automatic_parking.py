@@ -16,7 +16,7 @@
 #
 # Authors: Ryan Shim, Gilbert
 
-from math
+import math
 import numpy
 import sys
 import time
@@ -45,8 +45,10 @@ class Turtlebot3AutomaticParking(Node):
         self.goal_pose_y = 0.0
         self.goal_pose_theta = 0.0
         self.step = 0
+        self.scan = []
         self.get_key_state = False
-        self.init_odom_state = False  # To get the initial pose at the beginning
+        self.init_scan_state = False  # To get the initial scan at the beginning
+        self.init_odom_state = False  # To get the initial odom at the beginning
 
         """************************************************************
         ** Initialise ROS publishers and subscribers
@@ -56,6 +58,7 @@ class Turtlebot3AutomaticParking(Node):
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
         # self.reset_pub = self.create_publisher(Empty, 'reset', qos)
+        self.scan_spot_pub = self.create_publisher(LaserScan, 'scan_spot', qos)
 
         # Initialise subscribers
         self.scan_sub = self.create_subscription(
@@ -82,7 +85,8 @@ class Turtlebot3AutomaticParking(Node):
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def scan_callback(self, msg):
-        self.scan_ranges = msg.ranges
+        self.scan = msg
+
         self.init_scan_state = True
 
     def odom_callback(self, msg):
@@ -93,11 +97,16 @@ class Turtlebot3AutomaticParking(Node):
         self.init_odom_state = True
 
     def update_callback(self):
+        if self.init_scan_state is True and self.init_odom_state is True:
+            self.park_turtlebot3()
+
+    def park_turtlebot3(self):
         yaw = self.last_pose_theta
-        scan_done, center_angle, start_angle, end_angle = scan_parking_spot()
+        scan_done, center_angle, start_angle, end_angle = self.scan_parking_spot()
+        twist = Twist()
 
         # Step 0: Turn
-        if step == 0:
+        if self.step == 0:
             if scan_done == True:
                 fining_spot, start_point, center_point, end_point = find_spot_position(center_angle, start_angle, end_angle)
                 if fining_spot == True:
@@ -112,12 +121,12 @@ class Turtlebot3AutomaticParking(Node):
                     print('| yaw    | {0:.2f} deg'.format(numpy.rad2deg(yaw)))
                     print("=================================")
                     print("===== Go to parking spot!!! =====")
-                    step = 1
+                    self.step = 1
             else:
                 print("Fail finding parking spot.")
 
         # Step 1: Go Straight
-        elif step == 1:
+        elif self.step == 1:
             init_yaw = yaw
             yaw = theta + yaw
             if theta > 0:
@@ -127,12 +136,12 @@ class Turtlebot3AutomaticParking(Node):
                 else:
                     twist.linear.x = 0.0
                     twist.angular.z = 0.0
-                    cmd_pub.publish(twist)
+                    self.cmd_vel_pub.publish(twist)
                     time.sleep(1)
                     reset_pub.publish(reset)
                     time.sleep(3)
                     rotation_point = rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
-                    step = 2
+                    self.step = 2
             else:
                 if theta - init_yaw < -0.1:
                     twist.linear.x = 0.0
@@ -140,15 +149,15 @@ class Turtlebot3AutomaticParking(Node):
                 else:
                     twist.linear.x = 0.0
                     twist.angular.z = 0.0
-                    cmd_pub.publish(twist)
+                    self.cmd_vel_pub.publish(twist)
                     time.sleep(1)
                     reset_pub.publish(reset)
                     time.sleep(3)
                     rotation_point = rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
-                    step = 2
+                    self.step = 2
 
         # Step 2: Turn
-        elif step == 2:
+        elif self.step == 2:
             if abs(odom.pose.pose.position.x - (rotation_point[1])) > 0.02:
                 if odom.pose.pose.position.x > (rotation_point[1]):
                     twist.linear.x = -0.05
@@ -159,7 +168,7 @@ class Turtlebot3AutomaticParking(Node):
             else:
                 twist.linear.x = 0.0
                 twist.angular.z = 0.0
-                step = 3
+                self.step = 3
 
         # Step 3: Turn
         elif step == 3:
@@ -169,14 +178,14 @@ class Turtlebot3AutomaticParking(Node):
             else:
                 twist.linear.x = 0.0
                 twist.angular.z = 0.0
-                step = 4
+                self.step = 4
 
         # Step 4: Turn
-        elif step == 4:
+        elif self.step == 4:
             ranges = []
             for i in range(150, 210):
-                if msg.ranges[i] != 0:
-                    ranges.append(msg.ranges[i])
+                if self.scan.ranges[i] != 0:
+                    ranges.append(self.scan.ranges[i])
             if min(ranges) > 0.2:
                 twist.linear.x = -0.04
                 twist.angular.z = 0.0
@@ -184,12 +193,12 @@ class Turtlebot3AutomaticParking(Node):
                 twist.linear.x = 0.0
                 twist.angular.z = 0.0
                 print("Automatic parking done.")
-                cmd_pub.publish(twist)
+                self.cmd_vel_pub.publish(twist)
                 sys.exit()
-        cmd_pub.publish(twist)
-        scan_spot_filter(msg, center_angle, start_angle, end_angle)
+        self.cmd_vel_pub.publish(twist)
+        self.scan_spot_filter(center_angle, start_angle, end_angle)
 
-    def scan_parking_spot():
+    def scan_parking_spot(self):
         scan_done = False
         intensity_index = []
         index_count = []
@@ -202,7 +211,7 @@ class Turtlebot3AutomaticParking(Node):
         end_angle = 0
         for i in range(360):
             if i >= minimun_scan_angle and i < maximun_scan_angle:
-                spot_intensity = msg.intensities[i] ** 2 * msg.ranges[i] / 100000
+                spot_intensity = self.scan.intensities[i] ** 2 * self.scan.ranges[i] / 100000
                 if spot_intensity >= intensity_threshold:
                     intensity_index.append(i)
                     index_count.append(i)
@@ -224,14 +233,14 @@ class Turtlebot3AutomaticParking(Node):
                     scan_done = False
         return scan_done, center_angle, start_angle, end_angle
 
-    def get_angle_distance(angle):
-        distance = msg.ranges[int(angle)]
-        if msg.ranges[int(angle)] is not None and distance is not 0:
+    def get_angle_distance(self, angle):
+        distance = self.scan.ranges[int(angle)]
+        if self.scan.ranges[int(angle)] is not None and distance is not 0:
             angle = int(angle)
             distance = distance
         return angle, distance
 
-    def get_point(start_angle_distance):
+    def get_point(self, start_angle_distance):
         angle = start_angle_distance[0]
         angle = numpy.deg2rad(angle - 180)
         distance = start_angle_distance[1]
@@ -251,7 +260,7 @@ class Turtlebot3AutomaticParking(Node):
 
         return [x, y]
 
-    def find_spot_position(center_angle, start_angle, end_angle):
+    def find_spot_position(self, center_angle, start_angle, end_angle):
         print("scan parking spot done!")
         fining_spot = False
         start_angle_distance = get_angle_distance(start_angle)
@@ -270,22 +279,21 @@ class Turtlebot3AutomaticParking(Node):
 
         return fining_spot, start_point, center_point, end_point
 
-    def rotate_origin_only(x, y, radians):
+    def rotate_origin_only(self, x, y, radians):
         xx = x * math.cos(radians) + y * math.sin(radians)
         yy = -x * math.sin(radians) + y * math.cos(radians)
         return xx, yy
 
-    def scan_spot_filter(msg, center_angle, start_angle, end_angle):
-        scan_spot_pub = rospy.Publisher("/scan_spot", LaserScan, queue_size=1)
-        scan_spot = msg
+    def scan_spot_filter(self, center_angle, start_angle, end_angle):
+        scan_spot = self.scan
         scan_spot_list = list(scan_spot.intensities)
         for i in range(360):
-            scan_spot_list[i] = 0
-        scan_spot_list[start_angle] = msg.ranges[start_angle] + 10000
-        scan_spot_list[center_angle] = msg.ranges[center_angle] + 10000
-        scan_spot_list[end_angle] = msg.ranges[end_angle] + 10000
+            scan_spot_list[i] = 0.0
+        scan_spot_list[start_angle] = self.scan.ranges[start_angle] + 10000
+        scan_spot_list[center_angle] = self.scan.ranges[center_angle] + 10000
+        scan_spot_list[end_angle] = self.scan.ranges[end_angle] + 10000
         scan_spot.intensities = tuple(scan_spot_list)
-        scan_spot_pub.publish(scan_spot)
+        self.scan_spot_pub.publish(scan_spot)
 
     """*******************************************************************************
     ** Below should be replaced when porting for ROS 2 Python tf_conversions is done.
