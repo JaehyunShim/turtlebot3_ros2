@@ -46,6 +46,8 @@ class Turtlebot3AutomaticParking(Node):
         self.goal_pose_theta = 0.0
         self.step = 0
         self.scan = []
+        self.theta = 0.0
+        self.yaw = 0.0
         self.get_key_state = False
         self.init_scan_state = False  # To get the initial scan at the beginning
         self.init_odom_state = False  # To get the initial odom at the beginning
@@ -93,6 +95,7 @@ class Turtlebot3AutomaticParking(Node):
         self.last_pose_x = msg.pose.pose.position.x
         self.last_pose_y = msg.pose.pose.position.y
         _, _, self.last_pose_theta = self.euler_from_quaternion(msg.pose.pose.orientation)
+        self.yaw = self.last_pose_theta
 
         self.init_odom_state = True
 
@@ -101,7 +104,6 @@ class Turtlebot3AutomaticParking(Node):
             self.park_turtlebot3()
 
     def park_turtlebot3(self):
-        yaw = self.last_pose_theta
         scan_done, center_angle, start_angle, end_angle = self.scan_parking_spot()
         twist = Twist()
 
@@ -110,15 +112,15 @@ class Turtlebot3AutomaticParking(Node):
             if scan_done == True:
                 fining_spot, start_point, center_point, end_point = self.find_spot_position(center_angle, start_angle, end_angle)
                 if fining_spot == True:
-                    theta = numpy.arctan2(start_point[1] - end_point[1], start_point[0] - end_point[0])
+                    self.theta = numpy.arctan2(start_point[1] - end_point[1], start_point[0] - end_point[0])
                     print("=================================")
                     print("|        |     x     |     y     |")
                     print('| start  | {0:>10.3f}| {1:>10.3f}|'.format(start_point[0], start_point[1]))
                     print('| center | {0:>10.3f}| {1:>10.3f}|'.format(center_point[0], center_point[1]))
                     print('| end    | {0:>10.3f}| {1:>10.3f}|'.format(end_point[0], end_point[1]))
                     print("=================================")
-                    print('| theta  | {0:.2f} deg'.format(numpy.rad2deg(theta)))
-                    print('| yaw    | {0:.2f} deg'.format(numpy.rad2deg(yaw)))
+                    print('| theta  | {0:.2f} deg'.format(numpy.rad2deg(self.theta)))
+                    print('| yaw    | {0:.2f} deg'.format(numpy.rad2deg(self.yaw)))
                     print("=================================")
                     print("===== Go to parking spot!!! =====")
                     self.step = 1
@@ -127,10 +129,10 @@ class Turtlebot3AutomaticParking(Node):
 
         # Step 1: Go Straight
         elif self.step == 1:
-            init_yaw = yaw
-            yaw = theta + yaw
-            if theta > 0:
-                if theta - init_yaw > 0.1:
+            init_yaw = self.yaw
+            self.yaw = self.theta + self.yaw
+            if self.theta > 0:
+                if self.theta - init_yaw > 0.1:
                     twist.linear.x = 0.0
                     twist.angular.z = 0.2
                 else:
@@ -143,7 +145,7 @@ class Turtlebot3AutomaticParking(Node):
                     rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
                     self.step = 2
             else:
-                if theta - init_yaw < -0.1:
+                if self.theta - init_yaw < -0.1:
                     twist.linear.x = 0.0
                     twist.angular.z = -0.2
                 else:
@@ -172,7 +174,7 @@ class Turtlebot3AutomaticParking(Node):
 
         # Step 3: Turn
         elif step == 3:
-            if yaw > -math.pi / 2:
+            if self.yaw > -math.pi / 2:
                 twist.linear.x = 0.0
                 twist.angular.z = -0.2
             else:
