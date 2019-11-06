@@ -46,6 +46,7 @@ class Turtlebot3AutomaticParking(Node):
         self.goal_pose_theta = 0.0
         self.step = 0
         self.scan = []
+        self.rotation_point = []
         self.theta = 0.0
         self.yaw = 0.0
         self.get_key_state = False
@@ -59,7 +60,7 @@ class Turtlebot3AutomaticParking(Node):
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
-        # self.reset_pub = self.create_publisher(Empty, 'reset', qos)
+        self.reset_pub = self.create_publisher(Empty, 'reset', qos)
         self.scan_spot_pub = self.create_publisher(LaserScan, 'scan_spot', qos)
 
         # Initialise subscribers
@@ -92,6 +93,7 @@ class Turtlebot3AutomaticParking(Node):
         self.init_scan_state = True
 
     def odom_callback(self, msg):
+        self.odom = msg
         self.last_pose_x = msg.pose.pose.position.x
         self.last_pose_y = msg.pose.pose.position.y
         _, _, self.last_pose_theta = self.euler_from_quaternion(msg.pose.pose.orientation)
@@ -140,9 +142,9 @@ class Turtlebot3AutomaticParking(Node):
                     twist.angular.z = 0.0
                     self.cmd_vel_pub.publish(twist)
                     time.sleep(1)
-                    reset_pub.publish(reset)
+                    self.reset_pub.publish(reset)
                     time.sleep(3)
-                    rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
+                    self.rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
                     self.step = 2
             else:
                 if self.theta - init_yaw < -0.1:
@@ -153,15 +155,15 @@ class Turtlebot3AutomaticParking(Node):
                     twist.angular.z = 0.0
                     self.cmd_vel_pub.publish(twist)
                     time.sleep(1)
-                    reset_pub.publish(reset)
+                    self.reset_pub.publish(reset)
                     time.sleep(3)
-                    rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
+                    self.rotation_point = self.rotate_origin_only(center_point[0], center_point[1], -(pi / 2 - init_yaw))
                     self.step = 2
 
         # Step 2: Turn
         elif self.step == 2:
-            if abs(odom.pose.pose.position.x - (rotation_point[1])) > 0.02:
-                if odom.pose.pose.position.x > (rotation_point[1]):
+            if abs(self.odom.pose.pose.position.x - (self.rotation_point[1])) > 0.02:
+                if self.odom.pose.pose.position.x > (self.rotation_point[1]):
                     twist.linear.x = -0.05
                     twist.angular.z = 0.0
                 else:
