@@ -177,7 +177,7 @@ class Turtlebot3AutomaticParking(Node):
                 self.step = 3
 
         # Step 3: Turn
-        elif step == 3:
+        elif self.step == 3:
             if self.yaw > -math.pi / 2:
                 twist.linear.x = 0.0
                 twist.angular.z = -0.2
