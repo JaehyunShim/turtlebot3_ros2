@@ -24,37 +24,37 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # rviz_config_dir = os.path.join(
-    #     get_package_share_directory('turtlebot3_follower'),
-    #     'config',
-    #     'turtlebot3_follower.rviz')
-    rviz_config_dir = os.path.join(
+    config_dir = os.path.join(
+        get_package_share_directory('turtlebot3_follower'),
+        'config')
+    rviz_config_file = os.path.join(
         get_package_share_directory('turtlebot3_follower'),
         'rviz',
         'turtlebot3_follower.rviz')
-    urdf_file = os.path.join(get_package_share_directory(
-        'turtlebot3_description'),
+    urdf_file = os.path.join(
+        get_package_share_directory('turtlebot3_description'),
         'urdf',
         'turtlebot3_burger.urdf')
 
     return LaunchDescription([
+        Node(
+            package='turtlebot3_follower',
+            node_executable='turtlebot3_follower',
+            node_name='turtlebot3_follower',
+            output='screen',
+            arguments=[config_dir]),
+
         # Node(
-        #     package='turtlebot3_follower',
-        #     node_executable='turtlebot3_follower',
-        #     node_name='turtlebot3_follower',
+        #     package='rviz2',
+        #     node_executable='rviz2',
+        #     node_name='rviz2',
+        #     arguments=['-d', rviz_config_file],
         #     output='screen'),
 
-        Node(
-            package='rviz2',
-            node_executable='rviz2',
-            node_name='rviz2',
-            arguments=['-d', rviz_config_dir],
-            output='screen'),
-
-        Node(
-            package='robot_state_publisher',
-            node_executable='robot_state_publisher',
-            node_name='robot_state_publisher',
-            arguments=[urdf_file],
-            output='screen')            
+        # Node(
+        #     package='robot_state_publisher',
+        #     node_executable='robot_state_publisher',
+        #     node_name='robot_state_publisher',
+        #     arguments=[urdf_file],
+        #     output='screen')            
     ])

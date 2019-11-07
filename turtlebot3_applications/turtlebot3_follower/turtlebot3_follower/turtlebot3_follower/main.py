@@ -16,15 +16,17 @@
 #
 # Authors: Ryan Shim
 
+import sys
+
 import rclpy
 
 from turtlebot3_follower.turtlebot3_follower.turtlebot3_follower \
     import TurtleBot3Follower
 
 
-def main(args=None):
-    rclpy.init(args=args)
-    turtlebot3_follower = TurtleBot3Follower()
+def main(argv=sys.argv[1]):
+    rclpy.init()
+    turtlebot3_follower = TurtleBot3Follower(argv)
     rclpy.spin(turtlebot3_follower)
 
     turtlebot3_follower.destroy_node()

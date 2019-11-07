@@ -19,6 +19,7 @@
 import os
 import pickle
 import numpy
+from sklearn.ensemble import RandomForestClassifier
 
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
@@ -28,7 +29,7 @@ from sensor_msgs.msg import LaserScan
 
 
 class TurtleBot3Follower(Node):
-    def __init__(self):
+    def __init__(self, config_dir):
         super().__init__('turtlebot3_follower')
 
         """************************************************************
@@ -37,10 +38,8 @@ class TurtleBot3Follower(Node):
         self.labels = {'30_0':0, '30_l':1, '30_r':2, '45_0':3, '45_l':4, '45_r':5,'15_0':6, 'empty':7}
         self.scan = []
         self.init_scan_state = False  # To get the initial odom at the beginning
-        # self.config_dir = os.path.join(os.path.dirname(__file__))
-        # self.config_dir = self.config_dir.replace('turtlebot3_follower', 'config')
-        # self.clf = pickle.load(open(self.config_dir + '/clf', "rb"))
-        # self.clf2 = pickle.load(open(self.config_dir + '/clf2', "rb"))
+        self.clf = pickle.load(open(str(config_dir) + '/clf', "rb"))
+        self.clf2 = pickle.load(open(str(config_dir) + '/clf2', "rb"))
         
         """************************************************************
         ** Initialise ROS publishers and subscribers
@@ -130,9 +129,9 @@ class TurtleBot3Follower(Node):
             self.cmd_vel_pub.publish(twist)
 
     def check_people(self):
-        laser_data=[]
-        laser_data_set=[]
-        result=[]
+        laser_data = []
+        laser_data_set = []
+        result = []
         ret = 0
 
         for i in range(70,-2,-1) + range(359, 289,-1):
@@ -148,7 +147,7 @@ class TurtleBot3Follower(Node):
 
         laser_data_set.append(laser_data)
 
-        # [x for (x , y) in self.labels.iteritems() if y == self.clf2.predict(laser_data_set) ] ## Predict the position
+        [x for (x , y) in self.labels.iteritems() if y == self.clf2.predict(laser_data_set) ] ## Predict the position
 
         if result == ['empty']:
             ret = 0
@@ -159,9 +158,8 @@ class TurtleBot3Follower(Node):
         return ret
 
     def laser_scan(self):
-        data_test=[]
-        data_test_set=[]
-        self.msg = rospy.wait_for_message("scan_filtered", LaserScan)
+        data_test = []
+        data_test_set = []
 
         for i in range(70,-2,-1) + range(359, 289,-1):
 
@@ -176,4 +174,4 @@ class TurtleBot3Follower(Node):
 
         data_test_set.append(data_test)
 
-        # return [x for (x , y) in self.labels.iteritems() if y == self.clf.predict(data_test_set) ]
+        return [x for (x , y) in self.labels.iteritems() if y == self.clf.predict(data_test_set)]

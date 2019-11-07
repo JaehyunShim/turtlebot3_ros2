@@ -104,17 +104,17 @@ class Turtlebot3AutomaticParking(Node):
 
     def update_callback(self):
         if self.init_scan_state is True and self.init_odom_state is True:
-            self.park_turtlebot3()
+            self.park_robot()
 
-    def park_turtlebot3(self):
+    def park_robot(self):
         scan_done, center_angle, start_angle, end_angle = self.scan_parking_spot()
         twist = Twist()
         reset = Empty()
 
-        # Step 0: Turn
+        # Step 0: Find a parking spot
         if self.step == 0:
             if scan_done == True:
-                fining_spot, start_point, self.center_point, end_point = self.find_spot_position(center_angle, start_angle, end_angle)
+                fining_spot, start_point, self.center_point, end_point = self.find_parking_spot(center_angle, start_angle, end_angle)
                 if fining_spot == True:
                     self.theta = numpy.arctan2(start_point[1] - end_point[1], start_point[0] - end_point[0])
                     print("=================================")
@@ -131,7 +131,7 @@ class Turtlebot3AutomaticParking(Node):
             else:
                 print("Fail finding parking spot.")
 
-        # Step 1: Go Straight
+        # Step 1: Turn
         elif self.step == 1:
             init_yaw = self.yaw
             self.yaw = self.theta + self.yaw
@@ -162,7 +162,7 @@ class Turtlebot3AutomaticParking(Node):
                     self.rotation_point = self.rotate_origin_only(self.center_point[0], self.center_point[1], -(math.pi / 2 - init_yaw))
                     self.step = 2
 
-        # Step 2: Turn
+        # Step 2: Move straight
         elif self.step == 2:
             if abs(self.odom.pose.pose.position.x - (self.rotation_point[1])) > 0.02:
                 if self.odom.pose.pose.position.x > (self.rotation_point[1]):
@@ -186,7 +186,7 @@ class Turtlebot3AutomaticParking(Node):
                 twist.angular.z = 0.0
                 self.step = 4
 
-        # Step 4: Turn
+        # Step 4: Move Straight
         elif self.step == 4:
             ranges = []
             for i in range(150, 210):
@@ -266,7 +266,7 @@ class Turtlebot3AutomaticParking(Node):
 
         return [x, y]
 
-    def find_spot_position(self, center_angle, start_angle, end_angle):
+    def find_parking_spot(self, center_angle, start_angle, end_angle):
         print("scan parking spot done!")
         fining_spot = False
         start_angle_distance = self.get_angle_distance(start_angle)

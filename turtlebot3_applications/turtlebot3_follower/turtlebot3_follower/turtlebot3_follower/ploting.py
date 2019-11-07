@@ -16,9 +16,9 @@
 #
 # Authors: Ryan Shim
 
+import numpy
 import os
 import pickle
-import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 
@@ -40,25 +40,25 @@ if __name__ == '__main__':
 
         for x in range(70, -2, -1) + range(359, 289, -1):
 
-            if np.nan_to_num(laser_data[i].ranges[x]) != 0:
-                 data_range_training.append(np.nan_to_num(laser_data[i].ranges[x]))
+            if numpy.nan_to_num(laser_data[i].ranges[x]) != 0:
+                 data_range_training.append(numpy.nan_to_num(laser_data[i].ranges[x]))
 
-            elif (x+1) in range(70, -2, -1) + range(359, 289, -1) and (x-1) in range(70, -2, -1) + range(359, 289, -1) and np.nan_to_num(laser_data[i].ranges[x]) == 0:
-                 data_range_training.append((np.nan_to_num(laser_data[i].ranges[x+1])+np.nan_to_num(laser_data[i].ranges[x-1]))/2)
+            elif (x+1) in range(70, -2, -1) + range(359, 289, -1) and (x-1) in range(70, -2, -1) + range(359, 289, -1) and numpy.nan_to_num(laser_data[i].ranges[x]) == 0:
+                 data_range_training.append((numpy.nan_to_num(laser_data[i].ranges[x+1])+numpy.nan_to_num(laser_data[i].ranges[x-1]))/2)
 
             else:
-                 data_range_training.append(np.nan_to_num(laser_data[i].ranges[x]))
+                 data_range_training.append(numpy.nan_to_num(laser_data[i].ranges[x]))
 
         for x in range(70, -2, -1) + range(359, 289, -1):
 
-            if   np.nan_to_num(laser_data[i].intensities[x]) != 0 :
-                 data_intensity_training.append(np.nan_to_num(laser_data[i].intensities[x]))
+            if   numpy.nan_to_num(laser_data[i].intensities[x]) != 0 :
+                 data_intensity_training.append(numpy.nan_to_num(laser_data[i].intensities[x]))
 
-            elif (x+1) in range(70, -2, -1) + range(359, 289, -1) and (x-1) in range(70, -2, -1) + range(359, 289, -1) and np.nan_to_num(laser_data[i].intensities[x]) == 0:
-                 data_intensity_training.append((np.nan_to_num(laser_data[i].intensities[x+1])+np.nan_to_num(laser_data[i].intensities[x-1]))/2)
+            elif (x+1) in range(70, -2, -1) + range(359, 289, -1) and (x-1) in range(70, -2, -1) + range(359, 289, -1) and numpy.nan_to_num(laser_data[i].intensities[x]) == 0:
+                 data_intensity_training.append((numpy.nan_to_num(laser_data[i].intensities[x+1])+numpy.nan_to_num(laser_data[i].intensities[x-1]))/2)
 
             else :
-                 data_intensity_training.append(np.nan_to_num(laser_data[i].intensities[x]))
+                 data_intensity_training.append(numpy.nan_to_num(laser_data[i].intensities[x]))
 
         data_range_training_set.append(data_range_training)
         data_intensity_training_set.append(data_intensity_training)
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 #        plt.subplot(212)
 #        plt.axis([0, 140, 0.0, 4000])
 #        plt.plot(data_intensity_training, 'r')
-#        plt.ylabel('Intensitie')
+#        plt.ylabel('Intensities')
 
         data_range_training = []
         data_intensity_training = []
