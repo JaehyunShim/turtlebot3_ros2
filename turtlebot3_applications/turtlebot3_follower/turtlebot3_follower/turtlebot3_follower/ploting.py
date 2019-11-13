@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim
+# Authors: Christopher Tatsch, Ashe Kim, Gilbert, Ryan Shim
 
 import numpy
 import os

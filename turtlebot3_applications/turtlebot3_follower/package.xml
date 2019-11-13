@@ -4,11 +4,11 @@
   <name>turtlebot3_follower</name>
   <version>2.0.1</version>
   <description>
-    The follower demo was implemented using a 360 Laser Distance Sensor LDS-01. The classification algorithm is used based on previous fitting with samples of person and obstacles positions to take actions. It follows someone in front of the robot within a 50 centimeter range and 140 degrees.
+    ROS 2 package for turtlebot3_follower.
   </description>
-  <author email="kkjong@robotis.com">Gilbert</author>
   <author>Christopher Tatsch</author>
   <author>Ashe Kim</author>
+  <author email="kkjong@robotis.com">Gilbert</author>
   <author email="jhshim@robotis.com">Ryan Shim</author>
   <maintainer email="pyo@robotis.com">Pyo</maintainer>
   <license>Apache 2.0</license>
