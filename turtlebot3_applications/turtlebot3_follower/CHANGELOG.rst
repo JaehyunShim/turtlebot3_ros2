@@ -2,11 +2,6 @@
 Changelog for package turtlebot3_follower
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.0.1 (2019-11-01)
-------------------
-* 
-* Contributors: Ryan Shim
-
 1.1.0 (2019-01-23)
 ------------------
 * modified follower

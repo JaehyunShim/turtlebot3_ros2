@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim, Gilbert
+# Authors: Gilbert, Ryan Shim
 
 import math
 import numpy
@@ -90,7 +90,6 @@ class Turtlebot3AutomaticParking(Node):
     *******************************************************************************"""
     def scan_callback(self, msg):
         self.scan = msg
-
         self.init_scan_state = True
 
     def odom_callback(self, msg):
@@ -99,7 +98,6 @@ class Turtlebot3AutomaticParking(Node):
         self.last_pose_y = msg.pose.pose.position.y
         _, _, self.last_pose_theta = self.euler_from_quaternion(msg.pose.pose.orientation)
         self.yaw = self.last_pose_theta
-
         self.init_odom_state = True
 
     def update_callback(self):
@@ -201,6 +199,7 @@ class Turtlebot3AutomaticParking(Node):
                 print("Automatic parking done.")
                 self.cmd_vel_pub.publish(twist)
                 sys.exit()
+                
         self.cmd_vel_pub.publish(twist)
         self.scan_spot_filter(center_angle, start_angle, end_angle)
 
