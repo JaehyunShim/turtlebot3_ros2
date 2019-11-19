@@ -39,8 +39,8 @@ setup(
     entry_points={
         'console_scripts': [
             # To be added
-            'dqn_agent = turtlebot3_dqn.dqn.dqn_agent:main', 
-            'dqn_environment = turtlebot3_dqn.dqn.dqn_environment:main', 
+            'dqn_agent = turtlebot3_dqn.dqn_agent.dqn_agent:main', 
+            'dqn_environment = turtlebot3_dqn.dqn_environment.dqn_environment:main', 
             'dqn_gazebo = turtlebot3_dqn.dqn_gazebo.dqn_gazebo:main', 
             'dqn_action_graph = turtlebot3_dqn.dqn_graph.dqn_action_graph:main', 
             'dqn_result_graph = turtlebot3_dqn.dqn_graph.dqn_result_graph:main', 

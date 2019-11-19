@@ -17,21 +17,21 @@
 # Authors: Ryan Shim, Gilbert
 
 import collections
-# import json
 from keras.layers import Activation
 from keras.layers import Dense
 from keras.layers import Dropout
 from keras.models import Sequential
 # from keras.models import load_model
 from keras.optimizers import RMSprop
+# import json
 import numpy
 import random
-import rclpy
-from rclpy.qos import Node
-from rclpy.qos import QoSProfile
 import sys
 import time
 
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile
 from std_msgs.msg import Bool
 from std_msgs.msg import Float32
 from std_msgs.msg import Float32MultiArray
@@ -40,7 +40,8 @@ EPISODES = 3000
 
 
 class DQNAgent(Node):
-    def __init__(self, saved_model):
+    def __init__(self):
+    # def __init__(self, saved_model):
         super().__init__('dqn_agent')
 
         """************************************************************
@@ -164,14 +165,14 @@ class DQNAgent(Node):
 
                     # Display elapsed time
                     curr_time = time.time()
-                    m, s = divmod(int(curr_time - start_time), 60)
-                    h, m = divmod(m, 60)
+                    # m, s = divmod(int(curr_time - start_time), 60)
+                    # h, m = divmod(m, 60)
                     print(
                         "Ep:", episode,
                         "score:", score,
                         "memory length:", len(self.memory),
-                        "epsilon:", self.epsilon,
-                        "time:", h, ":", m, ":", s)
+                        "epsilon:", self.epsilon)
+                        # "time:", h, ":", m, ":", s)
 
                     param_keys = ['epsilon']
                     param_values = [self.epsilon]
@@ -190,7 +191,7 @@ class DQNAgent(Node):
 
     def build_model(self):
         model = Sequential()
-        model.add(Dense(64, input_shape=(self.state_size), activation='relu', kernel_initializer='lecun_uniform'))
+        model.add(Dense(64, input_shape=(self.state_size,), activation='relu', kernel_initializer='lecun_uniform'))
         model.add(Dense(64, activation='relu', kernel_initializer='lecun_uniform'))
         model.add(Dropout(0.2))
         model.add(Dense(self.action_size, kernel_initializer='lecun_uniform'))

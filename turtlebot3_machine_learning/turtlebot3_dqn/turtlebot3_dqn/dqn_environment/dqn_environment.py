@@ -18,20 +18,22 @@
 
 import math
 import numpy
-import rclpy
-from rclpy.qos import Node
-from rclpy.qos import QoSProfile
 import sys
 
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Twist
-from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Float32MultiArray
 from nav_msgs.msg import Odometry
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile
+from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float32
+from std_msgs.msg import Float32MultiArray
 
 
 class DQNEnvironment(Node):
-    def __init__(self, stage):
+    def __init__(self):
+    # def __init__(self, stage):
         super().__init__('dqn_environment')
 
         """************************************************************
@@ -49,7 +51,8 @@ class DQNEnvironment(Node):
         self.done = False
         self.fail = False
         self.succeed = False
-        self.stage = stage
+        self.stage = 0
+        # self.stage = stage
         self.scan_ranges = numpy.ones(360) * numpy.Infinity
         self.min_obstacle_distance = 0.0
         self.min_obstacle_angle = 0.0
