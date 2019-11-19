@@ -30,6 +30,8 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32
 from std_msgs.msg import Float32MultiArray
 
+from turtlebot3_msgs.srv import Dqn
+
 
 class DQNEnvironment(Node):
     def __init__(self):
@@ -44,10 +46,10 @@ class DQNEnvironment(Node):
         self.last_pose_x = 0.0
         self.last_pose_y = 0.0
         self.last_pose_theta = 0.0
-        self.goal_distance = 0.0
         self.goal_angle = 0.0
+        self.goal_distance = 10000.0
         self.action_size = 5
-        self.init_goal_distance = 0.0
+        self.init_goal_distance = 10000.0
         self.done = False
         self.fail = False
         self.succeed = False
@@ -67,11 +69,6 @@ class DQNEnvironment(Node):
         self.dqn_step_pub = self.create_publisher(Float32MultiArray, 'dqn_step', qos)
 
         # Initialise subscribers
-        self.dqn_action_sub = self.create_subscription(
-            Float32,
-            'dqn_action',
-            self.dqn_action_callback,
-            qos)
         self.goal_pose_sub = self.create_subscription(
             Pose,
             'goal_pose',
@@ -87,6 +84,9 @@ class DQNEnvironment(Node):
             'scan',
             self.scan_callback,
             qos)
+
+        # Initialise servers
+        self.server = self.create_service(Dqn, 'dqn_asr', self.dqn_asr_callback)
 
     """*******************************************************************************
     ** Callback functions and relevant functions
@@ -119,7 +119,7 @@ class DQNEnvironment(Node):
         elif goal_angle < -math.pi:
             goal_angle += 2 * math.pi
 
-        self.goal_distance = goal_distance
+        # self.goal_distance = goal_distance
         self.goal_angle = goal_angle
 
     def scan_callback(self, msg):
@@ -131,7 +131,6 @@ class DQNEnvironment(Node):
         state = list()
         state.append(self.goal_distance)
         state.append(self.goal_angle)
-        state.append(self.scan_ranges)
         state.append(self.min_obstacle_distance)
         state.append(self.min_obstacle_angle)
 
@@ -152,40 +151,36 @@ class DQNEnvironment(Node):
                 (self.goal_pose_x-self.last_pose_x)**2
                 + (self.goal_pose_y-self.last_pose_y)**2)
 
-        state.append(self.done)
-
         return state
 
     def reset(self):
         return self.state
 
-    def step(self, action):
+    def dqn_asr_callback(self, request, response):
+        action = request.action
         twist = Twist()
         twist.linear.x = 0.15
         max_angular_vel = 1.5
         twist.angular.z = ((self.action_size - 1)/2 - action) * 0.5 * max_angular_vel
         self.cmd_vel_pub.publish(twist)
 
-        state = self.get_state()
-        reward = self.get_reward(action)
-        done = self.done
+        response.state = self.get_state()
+        response.reward = self.get_reward(action)
+        response.done = self.done
 
-        dqn_step = Float32MultiArray()
-        dqn_step.data = [state, reward, done]
-        self.dqn_step_pub.publish(dqn_step)
+        return response
 
     def get_reward(self, action):
-        goal_distance = self.state[0]
-        goal_angle = self.state[1]
-        min_obstacle_distance = self.state[3]
+        self.goal_angle = math.pi/4 + self.goal_angle + (math.pi/8*action)
+        yaw_reward = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5*self.goal_angle % (2*math.pi) / math.pi)[0])
 
-        goal_angle = math.pi/4 + goal_angle + (math.pi/8*action)
-        yaw_reward = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5*goal_angle % (2*math.pi) / math.pi)[0])
-
-        goal_distance_rate = 2 ** (goal_distance / self.init_goal_distance)
+        if self.init_goal_distance == 0.0:
+            goal_distance_rate = 2
+        else:
+            goal_distance_rate = 2 ** (self.goal_distance / self.init_goal_distance)
 
         # Reward for avoiding obstacles
-        if min_obstacle_distance < 0.5:
+        if self.min_obstacle_distance < 0.5:
             obstacle_reward = -5
         else:
             obstacle_reward = 0

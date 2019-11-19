@@ -36,6 +36,8 @@ from std_msgs.msg import Bool
 from std_msgs.msg import Float32
 from std_msgs.msg import Float32MultiArray
 
+from turtlebot3_msgs.srv import Dqn
+
 EPISODES = 3000
 
 
@@ -48,7 +50,7 @@ class DQNAgent(Node):
         ** Initialise variables
         ************************************************************"""
         # State size and action size
-        self.state_size = 28
+        self.state_size = 4
         self.action_size = 5
 
         # DQN hyperparameter
@@ -81,6 +83,8 @@ class DQNAgent(Node):
         #     param = json.load(outfile)
         #     self.epsilon = param.get('epsilon')
 
+        self.init_dqn_step_state = False
+
         """************************************************************
         ** Initialise ROS publishers and clients
         ************************************************************"""
@@ -91,12 +95,8 @@ class DQNAgent(Node):
         self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
         self.dqn_result_pub = self.create_publisher(Float32MultiArray, 'dqn_result', qos)
 
-        # Initialise subscribers
-        self.dqn_step_sub = self.create_subscription(
-            Float32,
-            'dqn_step',
-            self.dqn_step_callback,
-            qos)
+        # Initialise clients
+        self.dqn_asr_client = self.create_client(Dqn, 'dqn_asr')
 
         """************************************************************
         ** Start process
@@ -110,6 +110,9 @@ class DQNAgent(Node):
         global_step = 0
         start_time = time.time()
 
+        state = list()
+        next_state = list()
+
         for episode in range(EPISODES):
             done = False
             episode_step = 0
@@ -120,63 +123,81 @@ class DQNAgent(Node):
             reset.data = True
             self.reset_pub.publish(reset)
 
+
             while not done:
                 episode_step += 1
                 global_step += 1
 
                 # Aciton based on the current state
-                state = self.state
-                action = self.get_action(self.state)
+                if episode_step == 1:
+                    action = 2.0  # Move forward
+                else:
+                    state = next_state
+                    action = self.get_action(state)
 
-                # Publish action to action graph
-                dqn_action = Float32()
-                dqn_action.data = action
-                self.dqn_action_pub.publish(dqn_action)
+                # Send action and receive next state and reward
+                req = Dqn.Request()
+                req.action = action
+                while not self.dqn_asr_client.wait_for_service(timeout_sec=1.0):
+                    self.get_logger().info('service not available, waiting again...')
 
-                # Next state and reward
-                next_state = self.state
-                reward = self.reward
-                score += reward
-                done = self.done
+                future = self.dqn_asr_client.call_async(req)
+
+                while rclpy.ok():
+                    rclpy.spin_once(self)
+                    if future.done():
+                        if future.result() is not None:
+                            # Next state and reward
+                            next_state = future.result().state
+                            reward = future.result().reward
+                            done = future.result().done
+                            score += reward
+                            print("hahaha")                            
+                        else:
+                            self.get_logger().error(
+                                'Exception while calling service: {0}'.format(future.exception()))
+                        break
 
                 # Save <s, a, r, s'> samples
-                self.append_sample(state, action, reward, next_state, done)
+                if episode_step > 1:
+                    self.append_sample(state, action, reward, next_state, done)
 
-                # Train model
-                if global_step >= self.train_start:
-                    self.train_model()
-                elif global_step >= self.target_update_start:
-                    self.train_model(True)
+                    # Train model
+                    if global_step > self.train_start:
+                        print("hoo")
+                        self.train_model()
+                    elif global_step > self.target_update_start:
+                        self.train_model(True)
 
-                # Time out
-                if episode_step >= 500:
-                    print("Time out!!")
-                    episode_step = 0
-                    done = True
+                    # Time out
+                    if episode_step >= 500:
+                        print("Time out!!")
+                        episode_step = 0
+                        done = True
 
-                if done:
-                    # Update neural network
-                    self.update_target_model()
+                    if done:
+                        # Update neural network
+                        self.update_target_model()
 
-                    # Publish result to result graph
-                    dqn_result = Float32MultiArray()
-                    dqn_result.data = [score, self.max_q_value]
-                    self.dqn_result_pub.publish(dqn_result)
+                        # Publish result to result graph
+                        # dqn_result = Float32MultiArray()
+                        # dqn_result.data = [score, self.max_q_value]
+                        # self.dqn_result_pub.publish(dqn_result)
 
-                    # Display elapsed time
-                    curr_time = time.time()
-                    # m, s = divmod(int(curr_time - start_time), 60)
-                    # h, m = divmod(m, 60)
-                    print(
-                        "Ep:", episode,
-                        "score:", score,
-                        "memory length:", len(self.memory),
-                        "epsilon:", self.epsilon)
-                        # "time:", h, ":", m, ":", s)
+                        # Display elapsed time
+                        curr_time = time.time()
+                        # m, s = divmod(int(curr_time - start_time), 60)
+                        # h, m = divmod(m, 60)
+                        print(
+                            "Ep:", episode,
+                            "score:", score,
+                            "memory length:", len(self.memory),
+                            "epsilon:", self.epsilon)
+                            # "time:", h, ":", m, ":", s)
 
-                    param_keys = ['epsilon']
-                    param_values = [self.epsilon]
-                    param_dictionary = dict(zip(param_keys, param_values))
+                        param_keys = ['epsilon']
+                        param_values = [self.epsilon]
+                        param_dictionary = dict(zip(param_keys, param_values))
 
                 # Update result and save model every 10 episodes
                 # if episode % 10 == 0:
@@ -184,10 +205,6 @@ class DQNAgent(Node):
                 #     with open(self.dir_path + str(episode) + '.json', 'w') as outfile:
                 #         json.dump(param_dictionary, outfile)
 
-    def dqn_step_callback(self, msg):
-        self.state = msg.data[0]
-        self.reward = msg.data[1]
-        self.done = msg.data[2]
 
     def build_model(self):
         model = Sequential()
@@ -206,10 +223,15 @@ class DQNAgent(Node):
 
     def get_action(self, state):
         if numpy.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
+            print("ha1111")
+            # return random.randrange(self.action_size)
+            return 1.1
         else:
+            print("ha2222")
+            state = numpy.asarray(state)
             q_value = self.model.predict(state.reshape(1, len(state)))
-            return numpy.argmax(q_value[0])
+            # return numpy.argmax(q_value[0])
+            return 1.1
 
     def append_sample(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -225,14 +247,16 @@ class DQNAgent(Node):
         y_batch = numpy.empty((0, self.action_size), dtype=numpy.float64)
 
         for i in range(self.batch_size):
-            state = mini_batch[i][0]
-            action = mini_batch[i][1]
-            reward = mini_batch[i][2]
-            next_state = mini_batch[i][3]
-            done = mini_batch[i][4]
+            state = numpy.asarray(mini_batch[i][0])
+            action = numpy.asarray(mini_batch[i][1])
+            reward = numpy.asarray(mini_batch[i][2])
+            next_state = numpy.asarray(mini_batch[i][3])
+            done = numpy.asarray(mini_batch[i][4])
 
             q_value = self.model.predict(state.reshape(1, len(state)))
             self.max_q_value = numpy.max(q_value)
+
+#####array list differentiate!!!
 
             # next q_value for the next state...??
             if not target_train_start:
