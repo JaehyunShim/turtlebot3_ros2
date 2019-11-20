@@ -127,16 +127,8 @@ class DQNEnvironment(Node):
         self.scan_ranges = msg.ranges
         self.min_obstacle_distance = min(self.scan_ranges)
         self.min_obstacle_angle = numpy.argmin(self.scan_ranges)
-        self.init_scan_state = True
 
     def get_state(self):
-
-        if self.init_scan_state is False:
-            self.goal_distance = 100.0
-            self.goal_angle = 100.0
-            self.min_obstacle_distance = 100.0
-            self.min_obstacle_angle = 100.0
-
         state = list()
         state.append(float(self.goal_distance))
         state.append(float(self.goal_angle))

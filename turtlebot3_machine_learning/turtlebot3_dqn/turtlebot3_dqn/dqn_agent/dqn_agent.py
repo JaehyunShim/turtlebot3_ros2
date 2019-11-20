@@ -21,14 +21,16 @@ from keras.layers import Activation
 from keras.layers import Dense
 from keras.layers import Dropout
 from keras.models import Sequential
-# from keras.models import load_model
+from keras.models import load_model
 from keras.optimizers import RMSprop
 # import json
 import numpy
+import os
 import random
 import sys
 import time
 
+from ament_index_python.packages import get_package_share_directory
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
@@ -70,13 +72,24 @@ class DQNAgent(Node):
         self.update_target_model()
         self.update_target_model_start = 2000
 
-        # Load previously saved models
-        # self.load_model = False
-        # self.load_episode = 0
+        # Load saved models
+        self.load_model = False
+        self.load_episode = 10
+        self.model_dir_path = os.path.join(
+            get_package_share_directory('turtlebot3_dqn'),
+            'model')
+        self.model_path = os.path.join(
+            self.model_dir_path,
+            'stage1_'+str(self.load_episode)+'.h5')
 
-        # if self.load_model:
-        # self.model.set_weights(load_model(saved_model+str(self.load_episode)+".h5").get_weights())
-        # self.model.load_weights(saved_model)
+        if self.load_model:
+            self.model.set_weights(load_model(self.model_path).get_weights())
+            # self.model.load_weights(saved_model)
+
+        model_path = os.path.join(
+            self.model_dir_path,
+            'stage1_'+str(20)+'.h5')
+        self.model.save(model_path)
 
         # with open(self.dir_path+str(self.load_episode)+'.json') as outfile:
         #     param = json.load(outfile)
@@ -199,8 +212,11 @@ class DQNAgent(Node):
                         param_dictionary = dict(zip(param_keys, param_values))
 
                 # Update result and save model every 10 episodes
-                # if episode % 10 == 0:
-                #     self.model.save(self.dir_path + str(episode) + '.h5')
+                if episode % 10 == 0:
+                    model_path = os.path.join(
+                        self.model_dir_path,
+                        'stage1_'+str(episode)+'.h5')
+                    self.model.save(model_path)
                 #     with open(self.dir_path + str(episode) + '.json', 'w') as outfile:
                 #         json.dump(param_dictionary, outfile)
 
