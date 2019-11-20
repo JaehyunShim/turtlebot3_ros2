@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim, Gilbert
+# Authors: Gilbert
 
 import math
 import numpy
@@ -26,9 +26,8 @@ from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Float32
-from std_msgs.msg import Float32MultiArray
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -46,18 +45,21 @@ class DQNEnvironment(Node):
         self.last_pose_x = 0.0
         self.last_pose_y = 0.0
         self.last_pose_theta = 0.0
-        self.goal_angle = 0.0
-        self.goal_distance = 10000.0
+
         self.action_size = 5
-        self.init_goal_distance = 10000.0
         self.done = False
         self.fail = False
         self.succeed = False
         self.stage = 0
         # self.stage = stage
+
+        self.goal_angle = 0.0
+        self.goal_distance = 1.0
+        self.init_goal_distance = 1.0
         self.scan_ranges = numpy.ones(360) * numpy.Infinity
-        self.min_obstacle_distance = 0.0
-        self.min_obstacle_angle = 0.0
+        self.min_obstacle_distance = 10000.0
+        self.min_obstacle_angle = 10000.0
+        self.init_scan_state = False  # To get the initial scan data at the beginning
 
         """************************************************************
         ** Initialise ROS publishers and subscribers
@@ -66,7 +68,6 @@ class DQNEnvironment(Node):
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
-        self.dqn_step_pub = self.create_publisher(Float32MultiArray, 'dqn_step', qos)
 
         # Initialise subscribers
         self.goal_pose_sub = self.create_subscription(
@@ -83,7 +84,7 @@ class DQNEnvironment(Node):
             LaserScan,
             'scan',
             self.scan_callback,
-            qos)
+            qos_profile=qos_profile_sensor_data)
 
         # Initialise servers
         self.server = self.create_service(Dqn, 'dqn_asr', self.dqn_asr_callback)
@@ -119,37 +120,58 @@ class DQNEnvironment(Node):
         elif goal_angle < -math.pi:
             goal_angle += 2 * math.pi
 
-        # self.goal_distance = goal_distance
+        self.goal_distance = goal_distance
         self.goal_angle = goal_angle
 
     def scan_callback(self, msg):
         self.scan_ranges = msg.ranges
         self.min_obstacle_distance = min(self.scan_ranges)
         self.min_obstacle_angle = numpy.argmin(self.scan_ranges)
+        self.init_scan_state = True
 
     def get_state(self):
+
+        if self.init_scan_state is False:
+            self.goal_distance = 100.0
+            self.goal_angle = 100.0
+            self.min_obstacle_distance = 100.0
+            self.min_obstacle_angle = 100.0
+
         state = list()
-        state.append(self.goal_distance)
-        state.append(self.goal_angle)
-        state.append(self.min_obstacle_distance)
-        state.append(self.min_obstacle_angle)
+        state.append(float(self.goal_distance))
+        state.append(float(self.goal_angle))
+        state.append(float(self.min_obstacle_distance))
+        state.append(float(self.min_obstacle_angle))
 
         # Get to the goal
-        if self.goal_distance < 0.20:  # unit: m
+        if self.goal_distance < 0.30:  # unit: m
             self.succeed = True
             self.done = True
             self.cmd_vel_pub.publish(Twist())  # robot stop
-            print("Collision! :(")
+            print(self.last_pose_x)
+            print(self.last_pose_y)
+            print(self.goal_pose_x)
+            print(self.goal_pose_y)
+            print(self.goal_distance)
+            print("Goal! :)")
+            # self.init_goal_distance = math.sqrt(
+            #     (self.goal_pose_x-self.last_pose_x)**2
+            #     + (self.goal_pose_y-self.last_pose_y)**2)
 
         # Collide with an obstacle
-        if self.min_obstacle_distance > 0.13:  # unit: m
+        if self.min_obstacle_distance < 0.13:  # unit: m
             self.fail = True
             self.done = True
             self.cmd_vel_pub.publish(Twist())  # robot stop
-            print("Goal! :)")
-            self.init_goal_distance = math.sqrt(
-                (self.goal_pose_x-self.last_pose_x)**2
-                + (self.goal_pose_y-self.last_pose_y)**2)
+            print(self.last_pose_x)
+            print(self.last_pose_y)
+            print(self.goal_pose_x)
+            print(self.goal_pose_y)
+            print(self.min_obstacle_distance)
+            print("Collision! :(")
+            # self.init_goal_distance = math.sqrt(
+            #     (self.goal_pose_x-self.last_pose_x)**2
+            #     + (self.goal_pose_y-self.last_pose_y)**2)
 
         return state
 
@@ -167,6 +189,9 @@ class DQNEnvironment(Node):
         response.state = self.get_state()
         response.reward = self.get_reward(action)
         response.done = self.done
+
+        if self.done is True:
+            self.done = False
 
         return response
 

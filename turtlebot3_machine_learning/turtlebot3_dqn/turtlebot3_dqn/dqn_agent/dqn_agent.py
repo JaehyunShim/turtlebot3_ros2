@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Ryan Shim, Gilbert
+# Authors: Gilbert
 
 import collections
 from keras.layers import Activation
@@ -32,13 +32,11 @@ import time
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
-from std_msgs.msg import Bool
-from std_msgs.msg import Float32
-from std_msgs.msg import Float32MultiArray
+# from std_msgs.msg import Float32MultiArray
+from std_srvs.srv import Empty
 
 from turtlebot3_msgs.srv import Dqn
 
-EPISODES = 3000
 
 
 class DQNAgent(Node):
@@ -52,6 +50,7 @@ class DQNAgent(Node):
         # State size and action size
         self.state_size = 4
         self.action_size = 5
+        self.episode_size = 3000
 
         # DQN hyperparameter
         self.discount_factor = 0.99
@@ -69,11 +68,11 @@ class DQNAgent(Node):
         self.model = self.build_model()
         self.target_model = self.build_model()
         self.update_target_model()
-        self.target_update_start = 2000
+        self.update_target_model_start = 2000
 
         # Load previously saved models
-        self.load_model = False
-        self.load_episode = 0
+        # self.load_model = False
+        # self.load_episode = 0
 
         # if self.load_model:
         # self.model.set_weights(load_model(saved_model+str(self.load_episode)+".h5").get_weights())
@@ -83,19 +82,17 @@ class DQNAgent(Node):
         #     param = json.load(outfile)
         #     self.epsilon = param.get('epsilon')
 
-        self.init_dqn_step_state = False
-
         """************************************************************
         ** Initialise ROS publishers and clients
         ************************************************************"""
         qos = QoSProfile(depth=10)
 
         # Initialise publishers
-        self.reset_pub = self.create_publisher(Bool, 'reset', qos)
-        self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
-        self.dqn_result_pub = self.create_publisher(Float32MultiArray, 'dqn_result', qos)
+        # self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
+        # self.dqn_result_pub = self.create_publisher(Float32MultiArray, 'dqn_result', qos)
 
         # Initialise clients
+        self.reset_simulation_client = self.create_client(Empty, 'reset_world')
         self.dqn_asr_client = self.create_client(Dqn, 'dqn_asr')
 
         """************************************************************
@@ -108,32 +105,30 @@ class DQNAgent(Node):
     *******************************************************************************"""
     def process(self):
         global_step = 0
-        start_time = time.time()
+        # start_time = time.time()
 
-        state = list()
-        next_state = list()
+        for episode in range(self.episode_size):
+            global_step += 1
+            local_step = 0
 
-        for episode in range(EPISODES):
+            state = list()
+            next_state = list()
             done = False
-            episode_step = 0
             score = 0
 
             # Reset DQN environment
-            reset = Bool()
-            reset.data = True
-            self.reset_pub.publish(reset)
-
+            self.reset_simulation()
+            time.sleep(1.0)
 
             while not done:
-                episode_step += 1
-                global_step += 1
+                local_step += 1
 
                 # Aciton based on the current state
-                if episode_step == 1:
+                if local_step == 1:
                     action = 2.0  # Move forward
                 else:
                     state = next_state
-                    action = self.get_action(state)
+                    action = float(self.get_action(state))
 
                 # Send action and receive next state and reward
                 req = Dqn.Request()
@@ -152,27 +147,31 @@ class DQNAgent(Node):
                             reward = future.result().reward
                             done = future.result().done
                             score += reward
-                            print("hahaha")                            
                         else:
                             self.get_logger().error(
                                 'Exception while calling service: {0}'.format(future.exception()))
                         break
 
                 # Save <s, a, r, s'> samples
-                if episode_step > 1:
+                if local_step > 1:
                     self.append_sample(state, action, reward, next_state, done)
 
                     # Train model
-                    if global_step > self.train_start:
-                        print("hoo")
-                        self.train_model()
-                    elif global_step > self.target_update_start:
+                    if global_step > self.update_target_model_start:
+                        print("hoo2")
                         self.train_model(True)
+                    elif global_step > self.train_start:
+                        print("hoo1")
+                        self.train_model()
+                        
 
                     # Time out
-                    if episode_step >= 500:
+                    if local_step >= 500:
                         print("Time out!!")
-                        episode_step = 0
+                        print("Time out!!")
+                        print("Time out!!")
+                        print("Time out!!")
+                        print("Time out!!")
                         done = True
 
                     if done:
@@ -189,7 +188,7 @@ class DQNAgent(Node):
                         # m, s = divmod(int(curr_time - start_time), 60)
                         # h, m = divmod(m, 60)
                         print(
-                            "Ep:", episode,
+                            "Episode:", episode,
                             "score:", score,
                             "memory length:", len(self.memory),
                             "epsilon:", self.epsilon)
@@ -205,6 +204,8 @@ class DQNAgent(Node):
                 #     with open(self.dir_path + str(episode) + '.json', 'w') as outfile:
                 #         json.dump(param_dictionary, outfile)
 
+                # Loop rate
+                time.sleep(0.01)
 
     def build_model(self):
         model = Sequential()
@@ -223,15 +224,11 @@ class DQNAgent(Node):
 
     def get_action(self, state):
         if numpy.random.rand() <= self.epsilon:
-            print("ha1111")
-            # return random.randrange(self.action_size)
-            return 1.1
+            return random.randrange(self.action_size)
         else:
-            print("ha2222")
             state = numpy.asarray(state)
             q_value = self.model.predict(state.reshape(1, len(state)))
-            # return numpy.argmax(q_value[0])
-            return 1.1
+            return numpy.argmax(q_value[0])
 
     def append_sample(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -282,6 +279,24 @@ class DQNAgent(Node):
 
         self.model.fit(x_batch, y_batch, batch_size=self.batch_size, epochs=1, verbose=0)
 
+    def reset_simulation(self):
+        req = Empty.Request()
+        while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+
+        future = self.reset_simulation_client.call_async(req)
+
+        while rclpy.ok():
+            rclpy.spin_once(self)
+            if future.done():
+                if future.result() is not None:
+                    # Reset result
+                    result = future.result()
+                    print("reset")                            
+                else:
+                    self.get_logger().error(
+                        'Exception while calling service: {0}'.format(future.exception()))
+                break
 
 def main(argv=sys.argv[1:]):
     rclpy.init(args=argv)
