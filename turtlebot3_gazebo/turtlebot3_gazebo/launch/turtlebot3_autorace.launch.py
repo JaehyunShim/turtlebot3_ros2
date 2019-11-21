@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Darby Lim
+# Authors: Ryan Shim
 
 import os
 
@@ -27,6 +27,7 @@ from launch.actions import ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 
 TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
+
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
