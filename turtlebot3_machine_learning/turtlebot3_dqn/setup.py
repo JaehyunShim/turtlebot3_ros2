@@ -18,7 +18,6 @@ setup(
         ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage2.launch.py'))),
         ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage3.launch.py'))),
         ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage4.launch.py'))),
-        ('share/' + package_name + '/model', glob.glob(os.path.join('model', 'stage1_10.h5'))),
     ],
     install_requires=['setuptools','launch'],
     zip_safe=True,
@@ -50,4 +49,3 @@ setup(
         ],
     },
 )
-

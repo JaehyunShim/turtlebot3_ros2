@@ -41,13 +41,13 @@ class DQNMovingObstacle():
         # Initialise publishers
         self.model_state_pub = self.create_publisher(
             ModelState,
-            'gazebo/set_model_state',
+            'set_model_state',
             qos)
 
         # Initialise subscribers
         self.model_state_sub = self.create_subscription(
             ModelStates,
-            'gazebo/model_states',
+            'model_states',
             self.model_state_callback,
             qos)
 

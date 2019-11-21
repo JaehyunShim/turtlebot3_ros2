@@ -16,11 +16,12 @@
 #
 # Authors: Gilbert
 
-import random
+# import random
+import sys
 
-from gazebo_msgs.msg import ModelStates
-from gazebo_msgs.srv import DeleteModel
-from gazebo_msgs.srv import SpawnModel
+# from gazebo_msgs.msg import ModelStates
+# from gazebo_msgs.srv import DeleteModel
+# from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose
 import rclpy
 from rclpy.node import Node
@@ -28,17 +29,20 @@ from rclpy.qos import QoSProfile
 from std_msgs.msg import String
 from std_srvs.srv import Empty
 
+
 class DQNGazebo(Node):
-    # def __init__(self, stage):
-    def __init__(self):
+    def __init__(self, stage):
         super().__init__('dqn_gazebo')
 
         """************************************************************
         ** Initialise variables
         ************************************************************"""
+        # Stage
+        # self.stage = int(stage)
+        self.stage = 1
+
         # self.model = self.f.read()
         self.model_name = 'goal'
-        self.stage = 1
         self.goal_pose_x = 0.0
         self.goal_pose_y = 0.0
 
@@ -52,9 +56,9 @@ class DQNGazebo(Node):
 
         # Initialise subscribers
         self.gazebo_cmd_sub = self.create_subscription(
-            String, 
-            'gazebo/command', 
-            self.gazebo_cmd_callback, 
+            String,
+            'gazebo/command',
+            self.gazebo_cmd_callback,
             qos)
 
         # Initialise client
@@ -94,7 +98,8 @@ class DQNGazebo(Node):
                 if future.result() is not None:
                     # Reset result
                     result = future.result()
-                    print("reset")                            
+                    print(result)
+                    print("reset")
                 else:
                     self.get_logger().error(
                         'Exception while calling service: {0}'.format(future.exception()))
@@ -104,19 +109,20 @@ class DQNGazebo(Node):
     #     while not self.delete_model_client.wait_for_service(timeout_sec=1.0):
     #         self.get_logger().info('service not available, waiting again...')
     #     req = self.model_name
-    #     resp = self.reset_simulation_client.call_async(req)   
+    #     resp = self.reset_simulation_client.call_async(req)
     #     rclpy.spin_until_future_complete(self, resp)
 
     def generate_goal_pose(self):
-        if self.stage != 4:
-            self.goal_pose_x = random.randrange(-12, 13) / 10.0
-            self.goal_pose_y = random.randrange(-12, 13) / 10.0
-        else:
-            goal_pose_list = [[0.6,0.0], [1.9,-0.5], [0.5,-1.9], [0.2,1.5], [-0.8,-0.9], [-1.0,1.0],
-                [-1.9, 1.1], [0.5,-1.5], [2.0,1.5], [0.5,1.8], [0.0,-1.0], [-0.1,1.6], [-2.0,0.8]]
-            index = random.randrange(0, 13)
-            self.goal_pose_x = goal_pose_x_list[index][0]
-            self.goal_pose_y = goal_pose_y_list[index][1]
+        # if self.stage != 4:
+        #     self.goal_pose_x = random.randrange(-12, 13) / 10.0
+        #     self.goal_pose_y = random.randrange(-12, 13) / 10.0
+        # else:
+            # goal_pose_list = [[0.6,0.0], [1.9,-0.5], [0.5,-1.9], [0.2,1.5], [-0.8,-0.9],
+            #     [-1.0,1.0], [-1.9, 1.1], [0.5,-1.5], [2.0,1.5], [0.5,1.8],
+            #     [0.0,-1.0], [-0.1,1.6], [-2.0,0.8]]
+            # index = random.randrange(0, 13)
+            # self.goal_pose_x = goal_pose_x_list[index][0]
+            # self.goal_pose_y = goal_pose_y_list[index][1]
 
         goal_pose = Pose()
         # goal_pose.position.x = self.goal_pose_x
@@ -134,20 +140,18 @@ class DQNGazebo(Node):
 
     #     while not self.spawn_model_client.wait_for_service(timeout_sec=1.0):
     #         self.get_logger().info('service not available, waiting again...')
-    #     req = [self.model_name, 
-    #             self.model, 
-    #             'robotis_namespace', 
-    #             goal_pose, 
+    #     req = [self.model_name,
+    #             self.model,
+    #             'robotis_namespace',
+    #             goal_pose,
     #             "world"]
-    #     resp = self.reset_simulation_client.call_async(req)   
+    #     resp = self.reset_simulation_client.call_async(req)
     #     rclpy.spin_until_future_complete(self, resp)
 
-"""*******************************************************************************
-** Main
-*******************************************************************************"""
-def main(args=None):
+
+def main(args=sys.argv[1]):
     rclpy.init(args=args)
-    dqn_gazebo = DQNGazebo()
+    dqn_gazebo = DQNGazebo(args)
     rclpy.spin(dqn_gazebo)
 
     dqn_gazebo.destroy()

@@ -18,7 +18,6 @@
 
 import math
 import numpy
-import sys
 
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Twist
@@ -34,7 +33,6 @@ from turtlebot3_msgs.srv import Dqn
 
 class DQNEnvironment(Node):
     def __init__(self):
-    # def __init__(self, stage):
         super().__init__('dqn_environment')
 
         """************************************************************
@@ -50,8 +48,6 @@ class DQNEnvironment(Node):
         self.done = False
         self.fail = False
         self.succeed = False
-        self.stage = 0
-        # self.stage = stage
 
         self.goal_angle = 0.0
         self.goal_distance = 1.0
@@ -189,7 +185,8 @@ class DQNEnvironment(Node):
 
     def get_reward(self, action):
         self.goal_angle = math.pi/4 + self.goal_angle + (math.pi/8*action)
-        yaw_reward = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5*self.goal_angle % (2*math.pi) / math.pi)[0])
+        yaw_reward = 1 - 4 * math.fabs(
+            0.5 - math.modf(0.25 + 0.5*self.goal_angle % (2*math.pi) / math.pi)[0])
 
         if self.init_goal_distance == 0.0:
             goal_distance_rate = 2
@@ -239,8 +236,8 @@ class DQNEnvironment(Node):
         return roll, pitch, yaw
 
 
-def main(argv=sys.argv[1:]):
-    rclpy.init(args=argv)
+def main(args=None):
+    rclpy.init(args=args)
     dqn_environment = DQNEnvironment()
     rclpy.spin(dqn_environment)
 

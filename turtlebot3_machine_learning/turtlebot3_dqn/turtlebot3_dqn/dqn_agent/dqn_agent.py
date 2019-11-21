@@ -23,32 +23,33 @@ from keras.layers import Dropout
 from keras.models import Sequential
 from keras.models import load_model
 from keras.optimizers import RMSprop
-# import json
+import json
 import numpy
 import os
 import random
 import sys
 import time
 
-from ament_index_python.packages import get_package_share_directory
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile
+# from rclpy.qos import QoSProfile
 # from std_msgs.msg import Float32MultiArray
 from std_srvs.srv import Empty
 
 from turtlebot3_msgs.srv import Dqn
 
 
-
 class DQNAgent(Node):
-    def __init__(self):
-    # def __init__(self, saved_model):
+    def __init__(self, stage):
         super().__init__('dqn_agent')
 
         """************************************************************
         ** Initialise variables
         ************************************************************"""
+        # Stage
+        # self.stage = int(stage)
+        self.stage = 1
+
         # State size and action size
         self.state_size = 4
         self.action_size = 5
@@ -75,30 +76,24 @@ class DQNAgent(Node):
         # Load saved models
         self.load_model = False
         self.load_episode = 10
-        self.model_dir_path = os.path.join(
-            get_package_share_directory('turtlebot3_dqn'),
+        self.model_dir_path = os.path.dirname(os.path.realpath(__file__))
+        self.model_dir_path = self.model_dir_path.replace(
+            'turtlebot3_dqn/dqn_agent',
             'model')
         self.model_path = os.path.join(
             self.model_dir_path,
-            'stage1_'+str(self.load_episode)+'.h5')
+            'stage'+str(self.stage)+'_episode'+str(self.load_episode)+'.h5')
 
         if self.load_model:
             self.model.set_weights(load_model(self.model_path).get_weights())
-            # self.model.load_weights(saved_model)
-
-        model_path = os.path.join(
-            self.model_dir_path,
-            'stage1_'+str(20)+'.h5')
-        self.model.save(model_path)
-
-        # with open(self.dir_path+str(self.load_episode)+'.json') as outfile:
-        #     param = json.load(outfile)
-        #     self.epsilon = param.get('epsilon')
+            with open(self.model_dir_path+str(self.load_episode)+'.json') as outfile:
+                param = json.load(outfile)
+                self.epsilon = param.get('epsilon')
 
         """************************************************************
         ** Initialise ROS publishers and clients
         ************************************************************"""
-        qos = QoSProfile(depth=10)
+        # qos = QoSProfile(depth=10)
 
         # Initialise publishers
         # self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
@@ -118,7 +113,6 @@ class DQNAgent(Node):
     *******************************************************************************"""
     def process(self):
         global_step = 0
-        # start_time = time.time()
 
         for episode in range(self.episode_size):
             global_step += 1
@@ -176,7 +170,6 @@ class DQNAgent(Node):
                     elif global_step > self.train_start:
                         print("hoo1")
                         self.train_model()
-                        
 
                     # Time out
                     if local_step >= 500:
@@ -196,16 +189,11 @@ class DQNAgent(Node):
                         # dqn_result.data = [score, self.max_q_value]
                         # self.dqn_result_pub.publish(dqn_result)
 
-                        # Display elapsed time
-                        curr_time = time.time()
-                        # m, s = divmod(int(curr_time - start_time), 60)
-                        # h, m = divmod(m, 60)
                         print(
                             "Episode:", episode,
                             "score:", score,
                             "memory length:", len(self.memory),
                             "epsilon:", self.epsilon)
-                            # "time:", h, ":", m, ":", s)
 
                         param_keys = ['epsilon']
                         param_values = [self.epsilon]
@@ -213,19 +201,23 @@ class DQNAgent(Node):
 
                 # Update result and save model every 10 episodes
                 if episode % 10 == 0:
-                    model_path = os.path.join(
+                    self.model_path = os.path.join(
                         self.model_dir_path,
                         'stage1_'+str(episode)+'.h5')
-                    self.model.save(model_path)
-                #     with open(self.dir_path + str(episode) + '.json', 'w') as outfile:
-                #         json.dump(param_dictionary, outfile)
+                    self.model.save(self.model_path)
+                    with open(self.model_dir_path+str(episode)+'.json', 'w') as outfile:
+                        json.dump(param_dictionary, outfile)
 
                 # Loop rate
                 time.sleep(0.01)
 
     def build_model(self):
         model = Sequential()
-        model.add(Dense(64, input_shape=(self.state_size,), activation='relu', kernel_initializer='lecun_uniform'))
+        model.add(Dense(
+            64,
+            input_shape=(self.state_size,),
+            activation='relu',
+            kernel_initializer='lecun_uniform'))
         model.add(Dense(64, activation='relu', kernel_initializer='lecun_uniform'))
         model.add(Dropout(0.2))
         model.add(Dense(self.action_size, kernel_initializer='lecun_uniform'))
@@ -254,7 +246,7 @@ class DQNAgent(Node):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-        # 
+        #
         mini_batch = random.sample(self.memory, self.batch_size)
         x_batch = numpy.empty((0, self.state_size), dtype=numpy.float64)
         y_batch = numpy.empty((0, self.action_size), dtype=numpy.float64)
@@ -269,7 +261,7 @@ class DQNAgent(Node):
             q_value = self.model.predict(state.reshape(1, len(state)))
             self.max_q_value = numpy.max(q_value)
 
-#####array list differentiate!!!
+            # array list differentiate!!!
 
             # next q_value for the next state...??
             if not target_train_start:
@@ -278,9 +270,9 @@ class DQNAgent(Node):
                 target_value = self.target_model.predict(next_state.reshape(1, len(next_state)))
 
             if done:
-                return reward
+                next_q_value = reward
             else:
-                return reward + self.discount_factor * numpy.amax(target_value)
+                next_q_value = reward + self.discount_factor * numpy.amax(target_value)
 
             # next q_value for the next state...??
             x_batch = numpy.append(x_batch, numpy.array([state.copy()]), axis=0)
@@ -308,15 +300,17 @@ class DQNAgent(Node):
                 if future.result() is not None:
                     # Reset result
                     result = future.result()
-                    print("reset")                            
+                    print(result)
+                    print("reset")
                 else:
                     self.get_logger().error(
                         'Exception while calling service: {0}'.format(future.exception()))
                 break
 
-def main(argv=sys.argv[1:]):
-    rclpy.init(args=argv)
-    dqn_agent = DQNAgent()
+
+def main(args=sys.argv[1]):
+    rclpy.init(args=args)
+    dqn_agent = DQNAgent(args)
     rclpy.spin(dqn_agent)
 
     dqn_agent.destroy()
