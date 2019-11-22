@@ -88,10 +88,6 @@ class DQNEnvironment(Node):
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def dqn_action_callback(self, msg):
-        self.goal_pose_x = msg[0].position.x
-        self.goal_pose_y = msg[0].position.y
-
     def goal_pose_callback(self, msg):
         self.goal_pose_x = msg.position.x
         self.goal_pose_y = msg.position.y
@@ -131,7 +127,7 @@ class DQNEnvironment(Node):
         state.append(float(self.min_obstacle_distance))
         state.append(float(self.min_obstacle_angle))
 
-        # Get to the goal
+        # Succeed
         if self.goal_distance < 0.30:  # unit: m
             self.succeed = True
             self.done = True
@@ -146,7 +142,7 @@ class DQNEnvironment(Node):
             #     (self.goal_pose_x-self.last_pose_x)**2
             #     + (self.goal_pose_y-self.last_pose_y)**2)
 
-        # Collide with an obstacle
+        # Fail
         if self.min_obstacle_distance < 0.13:  # unit: m
             self.fail = True
             self.done = True

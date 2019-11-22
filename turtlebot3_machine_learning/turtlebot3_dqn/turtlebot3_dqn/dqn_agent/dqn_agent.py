@@ -32,9 +32,9 @@ import time
 
 import rclpy
 from rclpy.node import Node
-# from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile
 # from std_msgs.msg import Float32MultiArray
-from std_srvs.srv import Empty
+from std_msgs.msg import String
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -90,27 +90,35 @@ class DQNAgent(Node):
                 param = json.load(outfile)
                 self.epsilon = param.get('epsilon')
 
+        self.cmd_gazebo = String()
+
         """************************************************************
         ** Initialise ROS publishers and clients
         ************************************************************"""
-        # qos = QoSProfile(depth=10)
+        qos = QoSProfile(depth=10)
 
         # Initialise publishers
         # self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
         # self.dqn_result_pub = self.create_publisher(Float32MultiArray, 'dqn_result', qos)
+        self.cmd_gazebo_pub = self.create_publisher(String, 'cmd_gazebo', qos)
 
         # Initialise clients
-        self.reset_simulation_client = self.create_client(Empty, 'reset_world')
         self.dqn_asr_client = self.create_client(Dqn, 'dqn_asr')
 
         """************************************************************
         ** Start process
         ************************************************************"""
+        self.publish_timer = self.create_timer(
+            0.010,  # unit: s
+            self.publish_callback)
         self.process()
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def publish_callback(self):
+        self.cmd_gazebo_pub.publish(self.cmd_gazebo)            
+
     def process(self):
         global_step = 0
 
@@ -120,11 +128,13 @@ class DQNAgent(Node):
 
             state = list()
             next_state = list()
-            done = False
+            done = False # done or now
+            done_result = False # succeeded or failed
             score = 0
 
             # Reset DQN environment
-            self.reset_simulation()
+            time.sleep(1.0)
+            # self.cmd_gazebo.data = ''
             time.sleep(1.0)
 
             while not done:
@@ -179,6 +189,7 @@ class DQNAgent(Node):
                         print("Time out!!")
                         print("Time out!!")
                         done = True
+                        done_result = False
 
                     if done:
                         # Update neural network
@@ -195,21 +206,28 @@ class DQNAgent(Node):
                             "memory length:", len(self.memory),
                             "epsilon:", self.epsilon)
 
-                        param_keys = ['epsilon']
-                        param_values = [self.epsilon]
-                        param_dictionary = dict(zip(param_keys, param_values))
+                        # param_keys = ['epsilon']
+                        # param_values = [self.epsilon]
+                        # param_dictionary = dict(zip(param_keys, param_values))
 
                 # Update result and save model every 10 episodes
-                if episode % 10 == 0:
-                    self.model_path = os.path.join(
-                        self.model_dir_path,
-                        'stage1_'+str(episode)+'.h5')
-                    self.model.save(self.model_path)
-                    with open(self.model_dir_path+str(episode)+'.json', 'w') as outfile:
-                        json.dump(param_dictionary, outfile)
+                # if episode % 10 == 0:
+                #     self.model_path = os.path.join(
+                #         self.model_dir_path,
+                #         'stage1_'+str(episode)+'.h5')
+                #     self.model.save(self.model_path)
+                #     with open(self.model_dir_path+str(episode)+'.json', 'w') as outfile:
+                #         json.dump(param_dictionary, outfile)
 
                 # Loop rate
                 time.sleep(0.01)
+
+            print("hahaaha1")
+            if done_result is True:
+                self.cmd_gazebo.data = 'succeed'
+            else:
+                self.cmd_gazebo.data = 'fail'
+            print("hahaaha2")
 
     def build_model(self):
         model = Sequential()
@@ -287,27 +305,6 @@ class DQNAgent(Node):
 
         self.model.fit(x_batch, y_batch, batch_size=self.batch_size, epochs=1, verbose=0)
 
-    def reset_simulation(self):
-        req = Empty.Request()
-        while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
-
-        future = self.reset_simulation_client.call_async(req)
-
-        while rclpy.ok():
-            rclpy.spin_once(self)
-            if future.done():
-                if future.result() is not None:
-                    # Reset result
-                    result = future.result()
-                    print(result)
-                    print("reset")
-                else:
-                    self.get_logger().error(
-                        'Exception while calling service: {0}'.format(future.exception()))
-                break
-
-
 def main(args=sys.argv[1]):
     rclpy.init(args=args)
     dqn_agent = DQNAgent(args)
@@ -315,7 +312,6 @@ def main(args=sys.argv[1]):
 
     dqn_agent.destroy()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
