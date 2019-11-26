@@ -27,6 +27,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import String
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -57,6 +58,8 @@ class DQNEnvironment(Node):
         self.min_obstacle_angle = 10000.0
         self.init_scan_state = False  # To get the initial scan data at the beginning
 
+        self.cmd_gazebo = String()
+
         """************************************************************
         ** Initialise ROS publishers and subscribers
         ************************************************************"""
@@ -64,6 +67,7 @@ class DQNEnvironment(Node):
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
+        self.cmd_gazebo_pub = self.create_publisher(String, 'cmd_gazebo', qos)
 
         # Initialise subscribers
         self.goal_pose_sub = self.create_subscription(
@@ -85,9 +89,19 @@ class DQNEnvironment(Node):
         # Initialise servers
         self.server = self.create_service(Dqn, 'dqn_asr', self.dqn_asr_callback)
 
+        """************************************************************
+        ** Start process
+        ************************************************************"""
+        self.publish_timer = self.create_timer(
+            0.010,  # unit: s
+            self.publish_callback)
+
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def publish_callback(self):
+        self.cmd_gazebo_pub.publish(self.cmd_gazebo)            
+
     def goal_pose_callback(self, msg):
         self.goal_pose_x = msg.position.x
         self.goal_pose_y = msg.position.y
@@ -126,6 +140,7 @@ class DQNEnvironment(Node):
         state.append(float(self.goal_angle))
         state.append(float(self.min_obstacle_distance))
         state.append(float(self.min_obstacle_angle))
+        self.cmd_gazebo.data = ''
 
         # Succeed
         if self.goal_distance < 0.30:  # unit: m
@@ -137,6 +152,7 @@ class DQNEnvironment(Node):
             print(self.goal_pose_x)
             print(self.goal_pose_y)
             print(self.goal_distance)
+            self.cmd_gazebo.data = 'succeed'
             print("Goal! :)")
             # self.init_goal_distance = math.sqrt(
             #     (self.goal_pose_x-self.last_pose_x)**2
@@ -152,6 +168,7 @@ class DQNEnvironment(Node):
             print(self.goal_pose_x)
             print(self.goal_pose_y)
             print(self.min_obstacle_distance)
+            self.cmd_gazebo.data = 'fail'
             print("Collision! :(")
             # self.init_goal_distance = math.sqrt(
             #     (self.goal_pose_x-self.last_pose_x)**2

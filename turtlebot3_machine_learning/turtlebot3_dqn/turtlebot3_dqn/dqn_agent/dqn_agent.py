@@ -34,7 +34,6 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 # from std_msgs.msg import Float32MultiArray
-from std_msgs.msg import String
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -90,8 +89,6 @@ class DQNAgent(Node):
                 param = json.load(outfile)
                 self.epsilon = param.get('epsilon')
 
-        self.cmd_gazebo = String()
-
         """************************************************************
         ** Initialise ROS publishers and clients
         ************************************************************"""
@@ -100,7 +97,6 @@ class DQNAgent(Node):
         # Initialise publishers
         # self.dqn_action_pub = self.create_publisher(Float32MultiArray, 'dqn_action', qos)
         # self.dqn_result_pub = self.create_publisher(Float32MultiArray, 'dqn_result', qos)
-        self.cmd_gazebo_pub = self.create_publisher(String, 'cmd_gazebo', qos)
 
         # Initialise clients
         self.dqn_asr_client = self.create_client(Dqn, 'dqn_asr')
@@ -108,17 +104,11 @@ class DQNAgent(Node):
         """************************************************************
         ** Start process
         ************************************************************"""
-        self.publish_timer = self.create_timer(
-            0.010,  # unit: s
-            self.publish_callback)
         self.process()
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def publish_callback(self):
-        self.cmd_gazebo_pub.publish(self.cmd_gazebo)            
-
     def process(self):
         global_step = 0
 
@@ -128,14 +118,11 @@ class DQNAgent(Node):
 
             state = list()
             next_state = list()
-            done = False # done or now
-            done_result = False # succeeded or failed
+            done = False
             score = 0
 
             # Reset DQN environment
-            time.sleep(1.0)
-            # self.cmd_gazebo.data = ''
-            time.sleep(1.0)
+            time.sleep(2.0)
 
             while not done:
                 local_step += 1
@@ -189,7 +176,6 @@ class DQNAgent(Node):
                         print("Time out!!")
                         print("Time out!!")
                         done = True
-                        done_result = False
 
                     if done:
                         # Update neural network
@@ -221,13 +207,6 @@ class DQNAgent(Node):
 
                 # Loop rate
                 time.sleep(0.01)
-
-            print("hahaaha1")
-            if done_result is True:
-                self.cmd_gazebo.data = 'succeed'
-            else:
-                self.cmd_gazebo.data = 'fail'
-            print("hahaaha2")
 
     def build_model(self):
         model = Sequential()

@@ -54,6 +54,8 @@ class DQNGazebo(Node):
         self.goal_pose_x = 1.0
         self.goal_pose_y = 0.0
 
+        self.init_state = False
+
         """************************************************************
         ** Initialise ROS publishers, subscribers and clients
         ************************************************************"""
@@ -75,24 +77,30 @@ class DQNGazebo(Node):
         self.reset_simulation_client = self.create_client(Empty, 'reset_simulation')
 
         # Process
-        self.process()
+        self.publish_timer = self.create_timer(
+            0.010,  # unit: s
+            self.publish_callback)
         
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def process(self):
+    def publish_callback(self):
         # Init 
-        self.delete_entity()
-        self.reset_simulation()
+        if self.init_state is False:
+            self.reset_simulation()
+            self.init_state = True
+            print("init!!!")
+            print("init!!!")
+            print("init!!!")
+            print("init!!!")
 
-        while 1:
-            # Publish goal pose
-            goal_pose = Pose()
-            goal_pose.position.x = self.goal_pose_x
-            goal_pose.position.y = self.goal_pose_y
-            self.goal_pose_pub.publish(goal_pose)
-            print("Goal pose: %.1f, %.1f", self.goal_pose_x, self.goal_pose_y)
-            self.spawn_entity()
+        # Publish goal pose
+        goal_pose = Pose()
+        goal_pose.position.x = self.goal_pose_x
+        goal_pose.position.y = self.goal_pose_y
+        self.goal_pose_pub.publish(goal_pose)
+        print("Goal pose: %.1f, %.1f", self.goal_pose_x, self.goal_pose_y)
+        self.spawn_entity()
 
     def cmd_gazebo_callback(self, msg):
         if (msg.data == 'succeed'):
@@ -117,7 +125,6 @@ class DQNGazebo(Node):
             index = random.randrange(0, 13)
             self.goal_pose_x = goal_pose_x_list[index][0]
             self.goal_pose_y = goal_pose_y_list[index][1]
-        
 
     def reset_simulation(self):
         req = Empty.Request()
