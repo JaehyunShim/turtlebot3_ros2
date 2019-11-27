@@ -57,7 +57,6 @@ class DQNEnvironment(Node):
         self.scan_ranges = numpy.ones(360) * numpy.Infinity
         self.min_obstacle_distance = 10000.0
         self.min_obstacle_angle = 10000.0
-        self.init_scan_state = False  # To get the initial scan data at the beginning
 
         self.local_step = 0
 
@@ -138,20 +137,14 @@ class DQNEnvironment(Node):
 
         # Succeed
         if self.goal_distance < 0.30:  # unit: m
+            print("Goal! :)")
             self.succeed = True
             self.done = True
             self.cmd_vel_pub.publish(Twist())  # robot stop
-            print(self.last_pose_x)
-            print(self.last_pose_y)
-            print(self.goal_pose_x)
-            print(self.goal_pose_y)
-            print(self.goal_distance)
-            print("Goal! :)")
             self.local_step = 0
             req = Empty.Request()
             while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
-
             future = self.task_succeed_client.call_async(req)
             # self.init_goal_distance = math.sqrt(
             #     (self.goal_pose_x-self.last_pose_x)**2
@@ -159,20 +152,14 @@ class DQNEnvironment(Node):
 
         # Fail
         if self.min_obstacle_distance < 0.13:  # unit: m
+            print("Collision! :(")
             self.fail = True
             self.done = True
             self.cmd_vel_pub.publish(Twist())  # robot stop
-            print(self.last_pose_x)
-            print(self.last_pose_y)
-            print(self.goal_pose_x)
-            print(self.goal_pose_y)
-            print(self.min_obstacle_distance)
-            print("Collision! :(")
             self.local_step = 0
             req = Empty.Request()
             while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
-
             future = self.task_fail_client.call_async(req)
 
             # self.init_goal_distance = math.sqrt(
@@ -180,13 +167,12 @@ class DQNEnvironment(Node):
             #     + (self.goal_pose_y-self.last_pose_y)**2)
         
         if self.local_step == 1000:
-            self.done = True
             print("Time out! :(")
+            self.done = True
             self.local_step = 0
             req = Empty.Request()
             while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
-
             future = self.task_fail_client.call_async(req)
 
         return state
@@ -197,8 +183,8 @@ class DQNEnvironment(Node):
     def dqn_asr_callback(self, request, response):
         action = request.action
         twist = Twist()
-        twist.linear.x = 0.15
-        max_angular_vel = 1.5
+        twist.linear.x = 0.3
+        max_angular_vel = 3.0
         twist.angular.z = ((self.action_size - 1)/2 - action) * 0.5 * max_angular_vel
         self.cmd_vel_pub.publish(twist)
 

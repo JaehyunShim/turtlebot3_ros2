@@ -39,8 +39,7 @@ class DQNGazebo(Node):
         ** Initialise variables
         ************************************************************"""
         # Stage
-        # self.stage = int(stage)
-        self.stage = 1
+        self.stage = int(stage)
 
         # Entity 'goal'
         self.entity_dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -64,7 +63,6 @@ class DQNGazebo(Node):
 
         # Initialise publishers
         self.goal_pose_pub = self.create_publisher(Pose, 'goal_pose', qos)
-        self._pose_pub = self.create_publisher(Pose, 'goal_pose', qos)
 
         # Initialise client
         self.delete_entity_client = self.create_client(DeleteEntity, 'delete_entity')
@@ -102,7 +100,7 @@ class DQNGazebo(Node):
     def task_succeed_callback(self, request, response):
         self.delete_entity()
         self.generate_goal_pose()
-        print("succeed!!!")
+        print("generate a new goal :)")
 
         return response
 
@@ -110,7 +108,7 @@ class DQNGazebo(Node):
         self.delete_entity()
         self.reset_simulation()
         self.generate_goal_pose()
-        print("fail!!!")
+        print("reset the gazebo environment :(")
 
         return response
 
@@ -119,12 +117,11 @@ class DQNGazebo(Node):
             self.goal_pose_x = random.randrange(-20, 21) / 10.0
             self.goal_pose_y = random.randrange(-20, 21) / 10.0
         else:
-            goal_pose_list = [[0.6,0.0], [1.9,-0.5], [0.5,-1.9], [0.2,1.5], [-0.8,-0.9],
-                [-1.0,1.0], [-1.9, 1.1], [0.5,-1.5], [2.0,1.5], [0.5,1.8],
-                [0.0,-1.0], [-0.1,1.6], [-2.0,0.8]]
-            index = random.randrange(0, 13)
-            self.goal_pose_x = goal_pose_x_list[index][0]
-            self.goal_pose_y = goal_pose_y_list[index][1]
+            goal_pose_list = [[1.0,0.0], [2.0,-1.5], [0.0,-2.0], [2.0,2.0], [0.8,2.0],
+                [-1.9,1.9], [-1.9, 0.2], [-1.9,-0.5], [-2.0,-2.0], [-0.5,-1.0]]
+            index = random.randrange(0, 10)
+            self.goal_pose_x = goal_pose_list[index][0]
+            self.goal_pose_y = goal_pose_list[index][1]
             print("Goal pose: ", self.goal_pose_x, self.goal_pose_y)
 
     def reset_simulation(self):
