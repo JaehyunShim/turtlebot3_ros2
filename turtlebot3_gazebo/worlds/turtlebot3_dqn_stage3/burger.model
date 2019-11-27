@@ -50,9 +50,13 @@
       </include>
     </model>
 
-    <include>
-      <uri>model://turtlebot3_dqn_world/obstacles</uri>
-    </include>
+    <model name="turtlebot3_dqn_obstacles">
+      <plugin name="obstacles" filename="libobstacles.so"/>
+      <allow_auto_disable>1</allow_auto_disable>
+      <include>
+        <uri>model://turtlebot3_dqn_world/obstacles</uri>
+      </include>
+    </model>
          
     <include>
       <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>

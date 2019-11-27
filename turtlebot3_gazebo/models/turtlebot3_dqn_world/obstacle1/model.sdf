@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
-    <model name="obstacle_1">
+    <model name="obstacle1">
       <link name="link">
         <collision name="collision">
           <geometry>
@@ -20,6 +20,5 @@
           </geometry>
         </visual>
       </link>
-      <!-- <plugin name="obstacle_2" filename="libobstacle_2.so"/> -->
     </model>        
 </sdf>

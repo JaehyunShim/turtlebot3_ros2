@@ -180,7 +180,7 @@ class DQNAgent(Node):
                 time.sleep(0.01)
 
             # Update result and save model every 10 episodes
-            if episode % 2 == 0:
+            if episode % 10 == 0:
                 self.model_path = os.path.join(
                     self.model_dir_path,
                     'stage'+str(self.stage)+'_episode'+str(episode)+'.h5')
@@ -197,7 +197,7 @@ class DQNAgent(Node):
         model = Sequential()
         model.add(Dense(
             64,
-            input_shape=(self.state_size,),
+            input_shape=(self.state_size,),o
             activation='relu',
             kernel_initializer='lecun_uniform'))
         model.add(Dense(64, activation='relu', kernel_initializer='lecun_uniform'))
@@ -221,7 +221,7 @@ class DQNAgent(Node):
             print(numpy.argmax(q_value[0]))
             return numpy.argmax(q_value[0])
 
-    def append_sample(self, state, action, reward, next_state, done):
+    def append_sample(self, state, action, reward, next_state, dne):
         self.memory.append((state, action, reward, next_state, done))
 
     def train_model(self, target_train_start=False):
@@ -265,6 +265,7 @@ class DQNAgent(Node):
                 y_batch = numpy.append(y_batch, numpy.array([[reward] * self.action_size]), axis=0)
 
         self.model.fit(x_batch, y_batch, batch_size=self.batch_size, epochs=1, verbose=0)
+
 
 def main(args=sys.argv[1]):
     rclpy.init(args=args)
