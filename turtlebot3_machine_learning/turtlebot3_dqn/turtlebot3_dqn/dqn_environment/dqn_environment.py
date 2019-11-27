@@ -28,6 +28,7 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
+from std_srvs.srv import Empty
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -58,7 +59,7 @@ class DQNEnvironment(Node):
         self.min_obstacle_angle = 10000.0
         self.init_scan_state = False  # To get the initial scan data at the beginning
 
-        self.cmd_gazebo = String()
+        self.local_step = 0
 
         """************************************************************
         ** Initialise ROS publishers and subscribers
@@ -67,7 +68,6 @@ class DQNEnvironment(Node):
 
         # Initialise publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', qos)
-        self.cmd_gazebo_pub = self.create_publisher(String, 'cmd_gazebo', qos)
 
         # Initialise subscribers
         self.goal_pose_sub = self.create_subscription(
@@ -86,22 +86,16 @@ class DQNEnvironment(Node):
             self.scan_callback,
             qos_profile=qos_profile_sensor_data)
 
+        # Initialise client
+        self.task_succeed_client = self.create_client(Empty, 'task_succeed')
+        self.task_fail_client = self.create_client(Empty, 'task_fail')
+
         # Initialise servers
         self.server = self.create_service(Dqn, 'dqn_asr', self.dqn_asr_callback)
-
-        """************************************************************
-        ** Start process
-        ************************************************************"""
-        self.publish_timer = self.create_timer(
-            0.010,  # unit: s
-            self.publish_callback)
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
-    def publish_callback(self):
-        self.cmd_gazebo_pub.publish(self.cmd_gazebo)            
-
     def goal_pose_callback(self, msg):
         self.goal_pose_x = msg.position.x
         self.goal_pose_y = msg.position.y
@@ -140,7 +134,7 @@ class DQNEnvironment(Node):
         state.append(float(self.goal_angle))
         state.append(float(self.min_obstacle_distance))
         state.append(float(self.min_obstacle_angle))
-        self.cmd_gazebo.data = ''
+        self.local_step += 1
 
         # Succeed
         if self.goal_distance < 0.30:  # unit: m
@@ -152,8 +146,13 @@ class DQNEnvironment(Node):
             print(self.goal_pose_x)
             print(self.goal_pose_y)
             print(self.goal_distance)
-            self.cmd_gazebo.data = 'succeed'
             print("Goal! :)")
+            self.local_step = 0
+            req = Empty.Request()
+            while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info('service not available, waiting again...')
+
+            future = self.task_succeed_client.call_async(req)
             # self.init_goal_distance = math.sqrt(
             #     (self.goal_pose_x-self.last_pose_x)**2
             #     + (self.goal_pose_y-self.last_pose_y)**2)
@@ -168,11 +167,27 @@ class DQNEnvironment(Node):
             print(self.goal_pose_x)
             print(self.goal_pose_y)
             print(self.min_obstacle_distance)
-            self.cmd_gazebo.data = 'fail'
             print("Collision! :(")
+            self.local_step = 0
+            req = Empty.Request()
+            while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info('service not available, waiting again...')
+
+            future = self.task_fail_client.call_async(req)
+
             # self.init_goal_distance = math.sqrt(
             #     (self.goal_pose_x-self.last_pose_x)**2
             #     + (self.goal_pose_y-self.last_pose_y)**2)
+        
+        if self.local_step == 1000:
+            self.done = True
+            print("Time out! :(")
+            self.local_step = 0
+            req = Empty.Request()
+            while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info('service not available, waiting again...')
+
+            future = self.task_fail_client.call_async(req)
 
         return state
 

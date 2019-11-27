@@ -19,6 +19,7 @@
 import os
 import random
 import sys
+import time
 
 from gazebo_msgs.srv import DeleteEntity
 from gazebo_msgs.srv import SpawnEntity
@@ -63,18 +64,16 @@ class DQNGazebo(Node):
 
         # Initialise publishers
         self.goal_pose_pub = self.create_publisher(Pose, 'goal_pose', qos)
-
-        # Initialise subscribers
-        self.cmd_gazebo_sub = self.create_subscription(
-            String,
-            'cmd_gazebo',
-            self.cmd_gazebo_callback,
-            qos)
+        self._pose_pub = self.create_publisher(Pose, 'goal_pose', qos)
 
         # Initialise client
         self.delete_entity_client = self.create_client(DeleteEntity, 'delete_entity')
         self.spawn_entity_client = self.create_client(SpawnEntity, 'spawn_entity')
         self.reset_simulation_client = self.create_client(Empty, 'reset_simulation')
+
+        # Initialise servers
+        self.task_succeed_server = self.create_service(Empty, 'task_succeed', self.task_succeed_callback)
+        self.task_fail_server = self.create_service(Empty, 'task_fail', self.task_fail_callback)
 
         # Process
         self.publish_timer = self.create_timer(
@@ -87,32 +86,33 @@ class DQNGazebo(Node):
     def publish_callback(self):
         # Init 
         if self.init_state is False:
+            self.delete_entity()
             self.reset_simulation()
             self.init_state = True
             print("init!!!")
-            print("init!!!")
-            print("init!!!")
-            print("init!!!")
+            print("Goal pose: ", self.goal_pose_x, self.goal_pose_y)
 
         # Publish goal pose
         goal_pose = Pose()
         goal_pose.position.x = self.goal_pose_x
         goal_pose.position.y = self.goal_pose_y
         self.goal_pose_pub.publish(goal_pose)
-        print("Goal pose: %.1f, %.1f", self.goal_pose_x, self.goal_pose_y)
         self.spawn_entity()
 
-    def cmd_gazebo_callback(self, msg):
-        if (msg.data == 'succeed'):
-            self.delete_entity()
-            self.generate_goal_pose()
-            self.spawn_entity()
-        elif (msg.data == 'fail'):
-            self.delete_entity()
-            self.reset_simulation()
-            self.generate_goal_pose()
-            self.spawn_entity()
-            print("fail!!!")
+    def task_succeed_callback(self, request, response):
+        self.delete_entity()
+        self.generate_goal_pose()
+        print("succeed!!!")
+
+        return response
+
+    def task_fail_callback(self, request, response):
+        self.delete_entity()
+        self.reset_simulation()
+        self.generate_goal_pose()
+        print("fail!!!")
+
+        return response
 
     def generate_goal_pose(self):
         if self.stage != 4:
@@ -125,6 +125,7 @@ class DQNGazebo(Node):
             index = random.randrange(0, 13)
             self.goal_pose_x = goal_pose_x_list[index][0]
             self.goal_pose_y = goal_pose_y_list[index][1]
+            print("Goal pose: ", self.goal_pose_x, self.goal_pose_y)
 
     def reset_simulation(self):
         req = Empty.Request()

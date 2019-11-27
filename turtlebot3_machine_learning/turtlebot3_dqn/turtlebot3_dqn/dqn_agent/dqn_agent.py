@@ -129,10 +129,10 @@ class DQNAgent(Node):
 
                 # Aciton based on the current state
                 if local_step == 1:
-                    action = 2.0  # Move forward
+                    action = 2  # Move forward
                 else:
                     state = next_state
-                    action = float(self.get_action(state))
+                    action = self.get_action(state)
 
                 # Send action and receive next state and reward
                 req = Dqn.Request()
@@ -167,15 +167,6 @@ class DQNAgent(Node):
                     elif global_step > self.train_start:
                         print("hoo1")
                         self.train_model()
-
-                    # Time out
-                    if local_step >= 500:
-                        print("Time out!!")
-                        print("Time out!!")
-                        print("Time out!!")
-                        print("Time out!!")
-                        print("Time out!!")
-                        done = True
 
                     if done:
                         # Update neural network
