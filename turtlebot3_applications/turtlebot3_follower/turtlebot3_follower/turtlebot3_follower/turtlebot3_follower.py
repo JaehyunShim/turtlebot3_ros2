@@ -70,7 +70,6 @@ class TurtleBot3Follower(Node):
     *******************************************************************************"""
     def scan_callback(self, msg):
         self.scan = msg
-
         self.init_scan_state = True
 
     def update_callback(self):

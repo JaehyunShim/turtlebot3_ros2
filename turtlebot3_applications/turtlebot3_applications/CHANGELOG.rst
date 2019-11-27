@@ -2,10 +2,6 @@
 Changelog for package turtlebot3_applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.0.1 (2019-11-01)
-------------------
-* ???
-
 1.1.0 (2019-01-23)
 ------------------
 * added launch file for automatic_parking node `#22 <https://github.com/ROBOTIS-GIT/turtlebot3_applications/issues/22>`_

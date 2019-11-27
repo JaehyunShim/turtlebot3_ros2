@@ -13,7 +13,6 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # To be added
         ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage1.launch.py'))),
         ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage2.launch.py'))),
         ('share/' + package_name + '/launch', glob.glob(os.path.join('launch', 'turtlebot3_dqn_stage3.launch.py'))),
@@ -21,8 +20,8 @@ setup(
     ],
     install_requires=['setuptools','launch'],
     zip_safe=True,
-    author=['Ryan Shim', 'Gilbert'],
-    author_email=['jhshim@robotis.com', 'kkjong@robotis.com'],
+    author=['Gilbert', 'Ryan Shim'],
+    author_email=['kkjong@robotis.com', 'jhshim@robotis.com'],
     maintainer='Pyo',
     maintainer_email='pyo@robotis.com',
     keywords=['ROS', 'ROS2', 'examples', 'rclpy'],
@@ -33,12 +32,11 @@ setup(
         'Topic :: Software Development',
     ],
     description=(
-        'Examples of Different TurtleBot3 Usage.'
+        'DQN for TurtleBot3.'
     ),
     license='Apache License, Version 2.0',
     entry_points={
         'console_scripts': [
-            # To be added
             'dqn_agent = turtlebot3_dqn.dqn_agent.dqn_agent:main', 
             'dqn_environment = turtlebot3_dqn.dqn_environment.dqn_environment:main', 
             'dqn_gazebo = turtlebot3_dqn.dqn_gazebo.dqn_gazebo:main', 
