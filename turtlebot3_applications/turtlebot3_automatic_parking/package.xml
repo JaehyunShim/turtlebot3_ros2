@@ -6,8 +6,8 @@
   <description>
 	  ROS 2 package for turtlebot3_automatic_parking.
   </description>
-  <author email="jhshim@robotis.com">Ryan Shim</author>
   <author email="kkjong@robotis.com">Gilbert</author>
+  <author email="jhshim@robotis.com">Ryan Shim</author>
   <maintainer email="pyo@robotis.com">Pyo</maintainer>
   <license>Apache 2.0</license>
   <url type="website">http://wiki.ros.org/turtlebot3_automatic_parking</url>

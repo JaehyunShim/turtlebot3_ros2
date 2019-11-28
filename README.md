@@ -7,6 +7,3 @@
 - [TB3 Manipulation](https://github.com/ROBOTIS-GIT/open_manipulator_with_tb3/tree/ros2)
 - [TB3 Machine Learning]()
 - [TB3 Applications]()
-
-## Files & Packagse Left in this Package
-- example launch, rviz and interactive marker related files
