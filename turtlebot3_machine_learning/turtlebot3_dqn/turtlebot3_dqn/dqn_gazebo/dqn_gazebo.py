@@ -51,7 +51,7 @@ class DQNGazebo(Node):
         self.entity = open(self.entity_path, 'r').read()
         self.entity_name = 'goal'
 
-        self.goal_pose_x = 1.0
+        self.goal_pose_x = 0.5
         self.goal_pose_y = 0.0
 
         self.init_state = False
@@ -114,8 +114,8 @@ class DQNGazebo(Node):
 
     def generate_goal_pose(self):
         if self.stage != 4:
-            self.goal_pose_x = random.randrange(-20, 21) / 10.0
-            self.goal_pose_y = random.randrange(-20, 21) / 10.0
+            self.goal_pose_x = random.randrange(-15, 16) / 10.0
+            self.goal_pose_y = random.randrange(-15, 16) / 10.0
         else:
             goal_pose_list = [[1.0,0.0], [2.0,-1.5], [0.0,-2.0], [2.0,2.0], [0.8,2.0],
                 [-1.9,1.9], [-1.9, 0.2], [-1.9,-0.5], [-2.0,-2.0], [-0.5,-1.0]]

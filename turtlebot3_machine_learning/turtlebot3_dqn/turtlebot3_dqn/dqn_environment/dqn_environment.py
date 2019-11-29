@@ -54,9 +54,9 @@ class DQNEnvironment(Node):
         self.goal_angle = 0.0
         self.goal_distance = 1.0
         self.init_goal_distance = 1.0
-        self.scan_ranges = numpy.ones(360) * numpy.Infinity
-        self.min_obstacle_distance = 10000.0
-        self.min_obstacle_angle = 10000.0
+        self.scan_ranges = []
+        self.min_obstacle_distance = 10.0
+        self.min_obstacle_angle = 10.0
 
         self.local_step = 0
 
@@ -90,7 +90,7 @@ class DQNEnvironment(Node):
         self.task_fail_client = self.create_client(Empty, 'task_fail')
 
         # Initialise servers
-        self.server = self.create_service(Dqn, 'dqn_asr', self.dqn_asr_callback)
+        self.dqn_com_server = self.create_service(Dqn, 'dqn_com', self.dqn_com_callback)
 
     """*******************************************************************************
     ** Callback functions and relevant functions
@@ -134,9 +134,9 @@ class DQNEnvironment(Node):
         state.append(float(self.min_obstacle_distance))
         state.append(float(self.min_obstacle_angle))
         self.local_step += 1
-
+        
         # Succeed
-        if self.goal_distance < 0.30:  # unit: m
+        if self.goal_distance < 0.20:  # unit: m
             print("Goal! :)")
             self.succeed = True
             self.done = True
@@ -146,9 +146,6 @@ class DQNEnvironment(Node):
             while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
             future = self.task_succeed_client.call_async(req)
-            # self.init_goal_distance = math.sqrt(
-            #     (self.goal_pose_x-self.last_pose_x)**2
-            #     + (self.goal_pose_y-self.last_pose_y)**2)
 
         # Fail
         if self.min_obstacle_distance < 0.13:  # unit: m
@@ -161,10 +158,6 @@ class DQNEnvironment(Node):
             while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
             future = self.task_fail_client.call_async(req)
-
-            # self.init_goal_distance = math.sqrt(
-            #     (self.goal_pose_x-self.last_pose_x)**2
-            #     + (self.goal_pose_y-self.last_pose_y)**2)
         
         if self.local_step == 1000:
             print("Time out! :(")
@@ -180,12 +173,11 @@ class DQNEnvironment(Node):
     def reset(self):
         return self.state
 
-    def dqn_asr_callback(self, request, response):
+    def dqn_com_callback(self, request, response):
         action = request.action
         twist = Twist()
         twist.linear.x = 0.3
-        max_angular_vel = 3.0
-        twist.angular.z = ((self.action_size - 1)/2 - action) * 0.5 * max_angular_vel
+        twist.angular.z = ((self.action_size - 1)/2 - action) * 1.5
         self.cmd_vel_pub.publish(twist)
 
         response.state = self.get_state()
@@ -194,32 +186,40 @@ class DQNEnvironment(Node):
 
         if self.done is True:
             self.done = False
+            self.succeed = False
+            self.fail = False
+
+        if request.init is True:
+            self.init_goal_distance = math.sqrt(
+                (self.goal_pose_x-self.last_pose_x)**2
+                + (self.goal_pose_y-self.last_pose_y)**2)
 
         return response
 
     def get_reward(self, action):
-        self.goal_angle = math.pi/4 + self.goal_angle + (math.pi/8*action)
-        yaw_reward = 1 - 4 * math.fabs(
-            0.5 - math.modf(0.25 + 0.5*self.goal_angle % (2*math.pi) / math.pi)[0])
+        yaw_reward = 1 - 2*math.fabs(self.goal_angle / math.pi)
 
         if self.init_goal_distance == 0.0:
             goal_distance_rate = 2
         else:
-            goal_distance_rate = 2 ** (self.goal_distance / self.init_goal_distance)
+            goal_distance_rate = 2 * (1 + self.goal_distance/self.init_goal_distance)
 
         # Reward for avoiding obstacles
-        if self.min_obstacle_distance < 0.5:
-            obstacle_reward = -5
+        if self.min_obstacle_distance < 0.25:
+            obstacle_reward = -2
         else:
             obstacle_reward = 0
 
-        reward = (yaw_reward * 5 * goal_distance_rate) + obstacle_reward
+        # reward = (yaw_reward * goal_distance_rate) + obstacle_reward
+        reward = (yaw_reward * goal_distance_rate)
 
         # + for succeed, - for fail
         if self.succeed:
-            reward += 1000
+            reward += 200
         elif self.fail:
-            reward -= 500
+            reward -= 100
+
+        print(reward)
 
         return reward
 

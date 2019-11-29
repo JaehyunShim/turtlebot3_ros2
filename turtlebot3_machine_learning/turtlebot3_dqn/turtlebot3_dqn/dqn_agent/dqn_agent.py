@@ -93,7 +93,7 @@ class DQNAgent(Node):
         qos = QoSProfile(depth=10)
 
         # Initialise clients
-        self.dqn_asr_client = self.create_client(Dqn, 'dqn_asr')
+        self.dqn_com_client = self.create_client(Dqn, 'dqn_com')
 
         """************************************************************
         ** Start process
@@ -113,6 +113,7 @@ class DQNAgent(Node):
             state = list()
             next_state = list()
             done = False
+            init = True
             score = 0
 
             # Reset DQN environment
@@ -126,15 +127,17 @@ class DQNAgent(Node):
                     action = 2  # Move forward
                 else:
                     state = next_state
-                    action = self.get_action(state)
+                    action = int(self.get_action(state))
 
                 # Send action and receive next state and reward
                 req = Dqn.Request()
+                print(int(action))
                 req.action = action
-                while not self.dqn_asr_client.wait_for_service(timeout_sec=1.0):
+                req.init = init
+                while not self.dqn_com_client.wait_for_service(timeout_sec=1.0):
                     self.get_logger().info('service not available, waiting again...')
 
-                future = self.dqn_asr_client.call_async(req)
+                future = self.dqn_com_client.call_async(req)
 
                 while rclpy.ok():
                     rclpy.spin_once(self)
@@ -145,6 +148,7 @@ class DQNAgent(Node):
                             reward = future.result().reward
                             done = future.result().done
                             score += reward
+                            init = False
                         else:
                             self.get_logger().error(
                                 'Exception while calling service: {0}'.format(future.exception()))
@@ -156,10 +160,8 @@ class DQNAgent(Node):
 
                     # Train model
                     if global_step > self.update_target_model_start:
-                        print("hoo2")
                         self.train_model(True)
                     elif global_step > self.train_start:
-                        print("hoo1")
                         self.train_model()
 
                     if done:
@@ -189,15 +191,16 @@ class DQNAgent(Node):
                     self.model_dir_path,
                     'stage'+str(self.stage)+'_episode'+str(episode)+'.json'), 'w') as outfile:
                     json.dump(param_dictionary, outfile)
-            # #
-            # if self.epsilon > self.epsilon_min:
-            #     self.epsilon *= self.epsilon_decay
+
+            #
+            if self.epsilon > self.epsilon_min:
+                self.epsilon *= self.epsilon_decay
 
     def build_model(self):
         model = Sequential()
         model.add(Dense(
             64,
-            input_shape=(self.state_size,),o
+            input_shape=(self.state_size,),
             activation='relu',
             kernel_initializer='lecun_uniform'))
         model.add(Dense(64, activation='relu', kernel_initializer='lecun_uniform'))
@@ -221,7 +224,7 @@ class DQNAgent(Node):
             print(numpy.argmax(q_value[0]))
             return numpy.argmax(q_value[0])
 
-    def append_sample(self, state, action, reward, next_state, dne):
+    def append_sample(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
     def train_model(self, target_train_start=False):
@@ -240,9 +243,6 @@ class DQNAgent(Node):
             q_value = self.model.predict(state.reshape(1, len(state)))
             self.max_q_value = numpy.max(q_value)
 
-            # array list differentiate!!!
-
-            # next q_value for the next state...??
             if not target_train_start:
                 target_value = self.model.predict(next_state.reshape(1, len(next_state)))
             else:
@@ -253,7 +253,6 @@ class DQNAgent(Node):
             else:
                 next_q_value = reward + self.discount_factor * numpy.amax(target_value)
 
-            # next q_value for the next state...??
             x_batch = numpy.append(x_batch, numpy.array([state.copy()]), axis=0)
 
             y_sample = q_value.copy()
