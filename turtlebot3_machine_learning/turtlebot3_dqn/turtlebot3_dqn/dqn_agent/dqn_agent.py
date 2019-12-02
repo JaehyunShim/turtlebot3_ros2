@@ -83,7 +83,9 @@ class DQNAgent(Node):
 
         if self.load_model:
             self.model.set_weights(load_model(self.model_path).get_weights())
-            with open(self.model_dir_path+str(self.load_episode)+'.json') as outfile:
+            with open(os.path.join(
+                    self.model_dir_path,
+                    'stage'+str(self.stage)+'_episode'+str(self.load_episode)+'.json')) as outfile:
                 param = json.load(outfile)
                 self.epsilon = param.get('epsilon')
 

@@ -197,7 +197,7 @@ class DQNEnvironment(Node):
         return response
 
     def get_reward(self, action):
-        yaw_reward = 1 - 2*math.fabs(self.goal_angle / math.pi)
+        yaw_reward = 1 - 2*math.sqrt(math.fabs(self.goal_angle / math.pi))
 
         if self.init_goal_distance == 0.0:
             goal_distance_rate = 2
@@ -215,7 +215,7 @@ class DQNEnvironment(Node):
 
         # + for succeed, - for fail
         if self.succeed:
-            reward += 200
+            reward += 100 * (yaw_reward + 1)
         elif self.fail:
             reward -= 100
 
