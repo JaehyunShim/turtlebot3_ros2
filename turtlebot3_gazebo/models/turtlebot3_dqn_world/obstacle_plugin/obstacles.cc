@@ -41,7 +41,7 @@ namespace gazebo
               // name the animation "move",
               // make it last 40 seconds,
               // and set it on a repeat loop
-              new gazebo::common::PoseAnimation("move", 10.0, true));
+              new gazebo::common::PoseAnimation("move", 40.0, true));
 
         gazebo::common::PoseKeyFrame *key;
 
@@ -50,11 +50,11 @@ namespace gazebo
         key->Translation(ignition::math::Vector3d(0.0, 0.0, 0.0));
         key->Rotation(ignition::math::Quaterniond(0, 0, 0));
 
-        key = anim->CreateKeyFrame(5);
+        key = anim->CreateKeyFrame(20);
         key->Translation(ignition::math::Vector3d(0.0, 0.0, 0.0));
         key->Rotation(ignition::math::Quaterniond(0, 0, PI));
 
-        key = anim->CreateKeyFrame(10);
+        key = anim->CreateKeyFrame(40);
         key->Translation(ignition::math::Vector3d(0.0, 0.0, 0.0));
         key->Rotation(ignition::math::Quaterniond(0, 0, 2*PI));
 

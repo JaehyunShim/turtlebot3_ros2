@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert
+# Authors: Ryan Shim, Gilbert
 
 import collections
 from keras.layers import Activation
@@ -32,7 +32,6 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -70,7 +69,7 @@ class DQNTest(Node):
 
         # Load saved models
         self.load_model = True
-        self.load_episode = 1000
+        self.load_episode = 600
         self.model_dir_path = os.path.dirname(os.path.realpath(__file__))
         self.model_dir_path = self.model_dir_path.replace(
             'turtlebot3_dqn/dqn_test',
@@ -90,8 +89,6 @@ class DQNTest(Node):
         """************************************************************
         ** Initialise ROS clients
         ************************************************************"""
-        qos = QoSProfile(depth=10)
-
         # Initialise clients
         self.dqn_com_client = self.create_client(Dqn, 'dqn_com')
 
@@ -228,6 +225,7 @@ def main(args=sys.argv[1]):
 
     dqn_test.destroy()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

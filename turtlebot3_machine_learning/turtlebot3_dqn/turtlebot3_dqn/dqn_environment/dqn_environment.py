@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert
+# Authors: Ryan Shim, Gilbert
 
 import math
 import numpy
@@ -27,7 +27,6 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import String
 from std_srvs.srv import Empty
 
 from turtlebot3_msgs.srv import Dqn
@@ -134,7 +133,7 @@ class DQNEnvironment(Node):
         state.append(float(self.min_obstacle_distance))
         state.append(float(self.min_obstacle_angle))
         self.local_step += 1
-        
+
         # Succeed
         if self.goal_distance < 0.20:  # unit: m
             print("Goal! :)")
@@ -145,7 +144,7 @@ class DQNEnvironment(Node):
             req = Empty.Request()
             while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
-            future = self.task_succeed_client.call_async(req)
+            self.task_succeed_client.call_async(req)
 
         # Fail
         if self.min_obstacle_distance < 0.13:  # unit: m
@@ -157,16 +156,16 @@ class DQNEnvironment(Node):
             req = Empty.Request()
             while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
-            future = self.task_fail_client.call_async(req)
-        
-        if self.local_step == 1000:
+            self.task_fail_client.call_async(req)
+
+        if self.local_step == 500:
             print("Time out! :(")
             self.done = True
             self.local_step = 0
             req = Empty.Request()
             while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('service not available, waiting again...')
-            future = self.task_fail_client.call_async(req)
+            self.task_fail_client.call_async(req)
 
         return state
 
@@ -199,10 +198,8 @@ class DQNEnvironment(Node):
     def get_reward(self, action):
         yaw_reward = 1 - 2*math.sqrt(math.fabs(self.goal_angle / math.pi))
 
-        if self.init_goal_distance == 0.0:
-            goal_distance_rate = 2
-        else:
-            goal_distance_rate = 2 * (1 + self.goal_distance/self.init_goal_distance)
+        distance_reward = (2 * self.init_goal_distance) / \
+            (self.init_goal_distance + self.goal_distance) - 1
 
         # Reward for avoiding obstacles
         if self.min_obstacle_distance < 0.25:
@@ -210,15 +207,13 @@ class DQNEnvironment(Node):
         else:
             obstacle_reward = 0
 
-        # reward = (yaw_reward * goal_distance_rate) + obstacle_reward
-        reward = (yaw_reward * goal_distance_rate)
+        reward = yaw_reward + distance_reward + obstacle_reward
 
         # + for succeed, - for fail
         if self.succeed:
-            reward += 100 * (yaw_reward + 1)
+            reward += 5
         elif self.fail:
-            reward -= 100
-
+            reward -= -10
         print(reward)
 
         return reward

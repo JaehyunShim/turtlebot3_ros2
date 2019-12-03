@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert
+# Authors: Ryan Shim, Gilbert
 
 import os
 import random
 import sys
-import time
 
 from gazebo_msgs.srv import DeleteEntity
 from gazebo_msgs.srv import SpawnEntity
@@ -27,7 +26,6 @@ from geometry_msgs.msg import Pose
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
-from std_msgs.msg import String
 from std_srvs.srv import Empty
 
 
@@ -70,19 +68,22 @@ class DQNGazebo(Node):
         self.reset_simulation_client = self.create_client(Empty, 'reset_simulation')
 
         # Initialise servers
-        self.task_succeed_server = self.create_service(Empty, 'task_succeed', self.task_succeed_callback)
+        self.task_succeed_server = self.create_service(
+            Empty,
+            'task_succeed',
+            self.task_succeed_callback)
         self.task_fail_server = self.create_service(Empty, 'task_fail', self.task_fail_callback)
 
         # Process
         self.publish_timer = self.create_timer(
             0.010,  # unit: s
             self.publish_callback)
-        
+
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def publish_callback(self):
-        # Init 
+        # Init
         if self.init_state is False:
             self.delete_entity()
             self.reset_simulation()
@@ -117,8 +118,8 @@ class DQNGazebo(Node):
             self.goal_pose_x = random.randrange(-15, 16) / 10.0
             self.goal_pose_y = random.randrange(-15, 16) / 10.0
         else:
-            goal_pose_list = [[1.0,0.0], [2.0,-1.5], [0.0,-2.0], [2.0,2.0], [0.8,2.0],
-                [-1.9,1.9], [-1.9, 0.2], [-1.9,-0.5], [-2.0,-2.0], [-0.5,-1.0]]
+            goal_pose_list = [[1.0, 0.0], [2.0, -1.5], [0.0, -2.0], [2.0, 2.0], [0.8, 2.0],
+                              [-1.9, 1.9], [-1.9, 0.2], [-1.9, -0.5], [-2.0, -2.0], [-0.5, -1.0]]
             index = random.randrange(0, 10)
             self.goal_pose_x = goal_pose_list[index][0]
             self.goal_pose_y = goal_pose_list[index][1]
@@ -129,7 +130,7 @@ class DQNGazebo(Node):
         while not self.reset_simulation_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
-        future = self.reset_simulation_client.call_async(req)
+        self.reset_simulation_client.call_async(req)
 
     def delete_entity(self):
         req = DeleteEntity.Request()
@@ -137,7 +138,7 @@ class DQNGazebo(Node):
         while not self.delete_entity_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
-        future = self.delete_entity_client.call_async(req)
+        self.delete_entity_client.call_async(req)
 
     def spawn_entity(self):
         goal_pose = Pose()
@@ -150,7 +151,7 @@ class DQNGazebo(Node):
         while not self.spawn_entity_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
-        future = self.spawn_entity_client.call_async(req)
+        self.spawn_entity_client.call_async(req)
 
 
 def main(args=sys.argv[1]):

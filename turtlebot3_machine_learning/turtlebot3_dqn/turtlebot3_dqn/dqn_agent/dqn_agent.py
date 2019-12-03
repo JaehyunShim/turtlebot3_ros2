@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Authors: Gilbert
+# Authors: Ryan Shim, Gilbert
 
 import collections
 from keras.layers import Activation
@@ -32,7 +32,6 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile
 
 from turtlebot3_msgs.srv import Dqn
 
@@ -92,8 +91,6 @@ class DQNAgent(Node):
         """************************************************************
         ** Initialise ROS clients
         ************************************************************"""
-        qos = QoSProfile(depth=10)
-
         # Initialise clients
         self.dqn_com_client = self.create_client(Dqn, 'dqn_com')
 
@@ -191,10 +188,10 @@ class DQNAgent(Node):
                 self.model.save(self.model_path)
                 with open(os.path.join(
                     self.model_dir_path,
-                    'stage'+str(self.stage)+'_episode'+str(episode)+'.json'), 'w') as outfile:
+                        'stage'+str(self.stage)+'_episode'+str(episode)+'.json'), 'w') as outfile:
                     json.dump(param_dictionary, outfile)
 
-            #
+            # Epsilon
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
 
@@ -275,6 +272,7 @@ def main(args=sys.argv[1]):
 
     dqn_agent.destroy()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
